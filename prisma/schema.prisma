@@ -1,0 +1,299 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  MODEL
+  AGENCY
+  CLIENT
+  ADMIN
+  MARKETPLACE_PROVIDER
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+enum ApplicationStatus {
+  APPLIED
+  PENDING
+  SHORTLISTED
+  APPROVED
+  REJECTED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum PilotStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PILOT_ACTIVE
+}
+
+enum NotificationType {
+  CASTING
+  APPLICATION
+  BOOKING
+  PROFILE
+  ADMIN
+  SYSTEM
+}
+
+model User {
+  id            String         @id @default(uuid())
+  clerkUserId   String?        @unique
+  email         String         @unique
+  name          String
+  role          Role           @default(MODEL)
+  status        UserStatus     @default(PENDING)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  profile       Profile?
+  model         Model?
+  agency        Agency?
+  client        Client?
+
+  sentMessages      Message[]        @relation("SentMessages")
+  receivedMessages  Message[]        @relation("ReceivedMessages")
+  notifications     Notification[]
+  pushSubscriptions PushSubscription[]
+  contactMessages   ContactMessage[]
+}
+
+model Profile {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio                 String?
+  avatarUrl           String?
+  cloudinaryPublicId  String?
+  location            String?
+  phoneNumber         String?
+  website             String?
+  instagramUrl        String?
+}
+
+model Model {
+  id                  String               @id @default(uuid())
+  userId              String               @unique
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Model Attributes
+  gender              String
+  category            String               // Runway, Commercial, Editorial, Fitness, Beauty, Plus-size, Petite, Influencer
+  height              Float                // in cm
+  waist               Float?               // in cm
+  hips                Float?               // in cm
+  chest               Float?               // in cm
+  shoeSize            Float?
+  eyeColor            String?
+  hairColor           String?
+  experienceYears     Int                  @default(0)
+  
+  // Verification and Status
+  isVerified          Boolean              @default(false)
+  isAvailable         Boolean              @default(true)
+  profileCompletion   Int                  @default(10)
+  viewsCount          Int                  @default(0)
+  profileImageUrl     String?
+  profileImagePublicId String?
+  
+  // Agency relationship (optional, some models are freelance)
+  agencyId            String?
+  agency              Agency?              @relation(fields: [agencyId], references: [id])
+  
+  // Collections
+  applications        CastingApplication[]
+  bookings            Booking[]
+  taggedEvents        Event[]              @relation("TaggedModels")
+  reviews             Review[]
+}
+
+model Agency {
+  id                  String      @id @default(uuid())
+  userId              String      @unique
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name                String
+  logoUrl             String?
+  cloudinaryPublicId  String?
+  description         String?
+  location            String
+  isVerified          Boolean     @default(false)
+  pilotStatus         PilotStatus @default(PENDING)
+
+  models              Model[]
+  castings            Casting[]
+}
+
+model Client {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  company     String?
+  website     String?
+  bookings    Booking[]
+  castings    Casting[]
+}
+
+model Casting {
+  id                  String               @id @default(uuid())
+  title               String
+  description         String
+  category            String               @default("General")
+  requirements        String
+  location            String
+  date                DateTime
+  budget              Float
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  agencyId            String?
+  agency              Agency?              @relation(fields: [agencyId], references: [id])
+  clientId            String?
+  client              Client?              @relation(fields: [clientId], references: [id])
+
+  applications        CastingApplication[]
+}
+
+model CastingApplication {
+  id          String            @id @default(uuid())
+  castingId   String
+  casting     Casting           @relation(fields: [castingId], references: [id], onDelete: Cascade)
+  modelId     String
+  model       Model             @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  status      ApplicationStatus @default(PENDING)
+  coverNote   String?
+  notes       String?
+  appliedAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model Booking {
+  id          String        @id @default(uuid())
+  clientId    String
+  client      Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  modelId     String
+  model       Model         @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  
+  date        DateTime
+  duration    String
+  budget      Float
+  status      BookingStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime      @default(now())
+}
+
+model Event {
+  id                  String       @id @default(uuid())
+  name                String
+  date                DateTime
+  location            String
+  description         String?
+  createdAt           DateTime     @default(now())
+  
+  images              EventImage[]
+  taggedModels        Model[]      @relation("TaggedModels")
+}
+
+model EventImage {
+  id                  String   @id @default(uuid())
+  eventId             String
+  event               Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  imageUrl            String
+  cloudinaryPublicId  String
+  uploadedAt          DateTime @default(now())
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  senderId    String
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId  String
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  content     String
+  isRead      Boolean  @default(false)
+  sentAt      DateTime @default(now())
+}
+
+model MarketplaceService {
+  id                  String   @id @default(uuid())
+  title               String
+  providerName        String
+  providerRole        String   // Photographer, Makeup Artist, Runway Coach, Fashion Stylist, Studio Rental, Event Organizer
+  description         String
+  price               Float
+  location            String
+  imageUrl            String?
+  cloudinaryPublicId  String?
+  createdAt           DateTime @default(now())
+}
+
+model Review {
+  id          String   @id @default(uuid())
+  modelId     String
+  model       Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  authorName  String
+  rating      Int      @default(5)
+  comment     String
+  createdAt   DateTime @default(now())
+}
+
+model Notification {
+  id           String           @id @default(uuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  message      String
+  type         NotificationType @default(SYSTEM)
+  isRead       Boolean          @default(false)
+  actionUrl    String?
+  pushSent     Boolean          @default(false)
+  pushSentAt   DateTime?
+  emailSent    Boolean          @default(false)
+  emailSentAt  DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model PushSubscription {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint    String   @unique
+  p256dh      String
+  auth        String
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name      String
+  email     String
+  role      String
+  subject   String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
