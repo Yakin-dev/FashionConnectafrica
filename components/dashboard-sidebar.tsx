@@ -15,7 +15,7 @@ interface DashboardSidebarProps {
   title: string;
   subtitle: string;
   items: SidebarItem[];
-  role: "MODEL" | "AGENCY" | "ADMIN";
+  role: "MODEL" | "AGENCY" | "ADMIN" | "CLIENT" | "MARKETPLACE_PROVIDER";
 }
 
 export default function DashboardSidebar({ title, subtitle, items, role }: DashboardSidebarProps) {
