@@ -46,7 +46,7 @@ export default function LandingPage() {
 
               <div className="flex flex-col sm:flex-row gap-4 pt-2">
                 <Link
-                  href="/role-selection"
+                  href="/signup"
                   className="rounded-full bg-[#C8A96A] px-8 py-4 text-center text-xs font-bold uppercase tracking-widest text-[#11100E] hover:bg-[#BCA062] transition-colors shadow-lg"
                 >
                   Join as Model
