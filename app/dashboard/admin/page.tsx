@@ -91,14 +91,14 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* Pending agency pilot requests */}
+              {/* Pending agency requests */}
               <div className="rounded-2xl border border-[#E7DED1] bg-white p-6 shadow-sm space-y-6">
                 <h3 className="font-serif text-lg font-bold uppercase tracking-widest text-[#1D1A16] border-b border-[#E7DED1]/70 pb-3 flex items-center gap-2">
                   <UserCheck className="h-4 w-4 text-[#C8A96A]" />
-                  Pending Agency Pilot Requests ({pendingAgencies.length})
+                  Pending Agency Requests ({pendingAgencies.length})
                 </h3>
                 {pendingAgencies.length === 0 ? (
-                  <EmptyState title="No pending requests" description="All agency pilot requests have been reviewed." />
+                  <EmptyState title="No pending requests" description="All agency requests have been reviewed." />
                 ) : (
                   <div className="space-y-4">
                     {pendingAgencies.map((a) => (
@@ -128,7 +128,7 @@ export default function AdminDashboard() {
                             disabled={!!actionLoading}
                             className="rounded-full bg-[#C8A96A] text-[#11100E] px-4 py-1.5 text-[9px] font-bold uppercase tracking-widest hover:bg-[#BCA062] transition-colors disabled:opacity-60 flex items-center gap-1">
                             {actionLoading === a.id + "activate" && <Loader2 className="h-3 w-3 animate-spin" />}
-                            Activate Pilot
+                            Approve Profile
                           </button>
                         </div>
                       </div>

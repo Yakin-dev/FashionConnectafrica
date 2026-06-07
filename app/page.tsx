@@ -96,20 +96,20 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pilot Program Banner */}
+      {/* Agency Join Banner */}
       <section className="bg-[#C8A96A]/10 border-y border-[#C8A96A]/30 py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="space-y-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[#C8A96A] px-3 py-1 text-[9px] font-bold text-[#11100E] uppercase tracking-widest">
                 <Sparkles className="h-3 w-3" />
-                Free Pilot Access
+                Create Your Professional Profile
               </span>
               <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#1D1A16] uppercase">
-                Join the Pilot Program
+                Join ModelConnect.Africa
               </h2>
               <p className="text-xs text-[#6B6257] leading-relaxed max-w-xl">
-                Selected agencies can list models, post casting calls, manage applications, and test the full platform for free during the pilot stage. No payment required.
+                Agencies can create profiles, list models, post opportunities, and manage applications.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 shrink-0">
@@ -117,7 +117,7 @@ export default function LandingPage() {
                 href="/signup"
                 className="rounded-full bg-[#1D1A16] px-6 py-3 text-center text-xs font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] hover:text-[#11100E] transition-colors"
               >
-                Apply for Pilot Access
+                Request Agency Access
               </Link>
               <Link
                 href="/about"

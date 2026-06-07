@@ -39,22 +39,16 @@ export async function GET() {
       },
     });
 
-    const roleRedirects: Record<string, string> = {
-      MODEL: "/dashboard/model",
-      AGENCY: "/dashboard/agency",
-      CLIENT: "/dashboard/client",
-      ADMIN: "/dashboard/admin",
-      MARKETPLACE_PROVIDER: "/marketplace",
-    };
-
     const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-    if (user.status === "PENDING" && user.role === "MODEL") {
-      return NextResponse.redirect(new URL("/role-selection", base));
+    if (!user.onboardingCompleted) {
+      return NextResponse.redirect(new URL("/onboarding", base));
     }
 
-    const redirect = roleRedirects[user.role] ?? "/role-selection";
-    return NextResponse.redirect(new URL(redirect, base));
+    const { getDashboardRouteForUser } = await import("@/lib/user-routing");
+    const redirectUrl = getDashboardRouteForUser(user);
+    
+    return NextResponse.redirect(new URL(redirectUrl, base));
   } catch (error) {
     console.error("[auth/redirect]", error);
     return NextResponse.redirect(
@@ -62,3 +56,4 @@ export async function GET() {
     );
   }
 }
+

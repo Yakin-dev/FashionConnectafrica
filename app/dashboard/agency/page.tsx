@@ -41,10 +41,10 @@ interface AgencyData {
 }
 
 const PILOT_BADGE: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  PENDING:      { label: "Pilot Pending Review", color: "bg-amber-100 text-amber-700 border-amber-300", icon: Clock },
-  APPROVED:     { label: "Pilot Approved",        color: "bg-emerald-100 text-emerald-700 border-emerald-300", icon: ShieldCheck },
-  REJECTED:     { label: "Pilot Rejected",        color: "bg-red-100 text-red-700 border-red-300", icon: XCircle },
-  PILOT_ACTIVE: { label: "Pilot Active",          color: "bg-[#C8A96A]/20 text-[#8B6914] border-[#C8A96A]/40", icon: CheckCircle },
+  PENDING:      { label: "Profile Under Review", color: "bg-amber-100 text-amber-700 border-amber-300", icon: Clock },
+  APPROVED:     { label: "Approved",        color: "bg-emerald-100 text-emerald-700 border-emerald-300", icon: ShieldCheck },
+  REJECTED:     { label: "Not Approved",        color: "bg-red-100 text-red-700 border-red-300", icon: XCircle },
+  PILOT_ACTIVE: { label: "Approved",          color: "bg-[#C8A96A]/20 text-[#8B6914] border-[#C8A96A]/40", icon: CheckCircle },
 };
 
 export default function AgencyDashboard() {
@@ -146,17 +146,17 @@ export default function AgencyDashboard() {
 
             <div className="flex-1 w-full space-y-8">
 
-              {/* Pilot Status Banner */}
+              {/* Profile Status Banner */}
               <div className={`rounded-2xl border p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${badge.color}`}>
                 <div className="flex items-center gap-2">
                   <BadgeIcon className="h-4 w-4 shrink-0" />
                   <div>
                     <p className="text-xs font-bold uppercase tracking-widest">{badge.label}</p>
                     <p className="text-[10px] mt-0.5 opacity-80">
-                      {pilotStatus === "PENDING" && "Your pilot access request is under review by the admin."}
+                      {pilotStatus === "PENDING" && "Your agency profile is under review."}
                       {pilotStatus === "APPROVED" && "You can now list models and post casting calls."}
-                      {pilotStatus === "PILOT_ACTIVE" && "Full pilot access active. List models and post castings."}
-                      {pilotStatus === "REJECTED" && "Your pilot request was rejected. Contact support for details."}
+                      {pilotStatus === "PILOT_ACTIVE" && "Full access active. List models and post castings."}
+                      {pilotStatus === "REJECTED" && "Your request was not approved. Contact support for details."}
                     </p>
                   </div>
                 </div>
@@ -167,7 +167,7 @@ export default function AgencyDashboard() {
                     className="shrink-0 rounded-full bg-[#1D1A16] px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-colors disabled:opacity-60 flex items-center gap-1.5"
                   >
                     {pilotLoading && <Loader2 className="h-3 w-3 animate-spin" />}
-                    Request Pilot Access
+                    Request Verification
                   </button>
                 )}
                 {!agency && !loading && (
@@ -177,7 +177,7 @@ export default function AgencyDashboard() {
                     className="shrink-0 rounded-full bg-[#1D1A16] px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-colors disabled:opacity-60 flex items-center gap-1.5"
                   >
                     {pilotLoading && <Loader2 className="h-3 w-3 animate-spin" />}
-                    Request Pilot Access
+                    Request Verification
                   </button>
                 )}
               </div>
@@ -192,7 +192,7 @@ export default function AgencyDashboard() {
                   <StatCard title="Roster Talent"    value={displayModels.length}    change="HQ MANAGED"  icon={Users} />
                   <StatCard title="Posted Castings"  value={castings.length}         change="ACTIVE"      icon={BookOpen} />
                   <StatCard title="Applications"     value={castings.reduce((a, c) => a + (c._count?.applications ?? 0), 0)} change="RECEIVED" icon={Eye} />
-                  <StatCard title="Pilot Status"     value={pilotStatus.replace("_", " ")} change="CURRENT" icon={ShieldCheck} />
+                  <StatCard title="Account Status"     value={pilotStatus.replace("_", " ")} change="CURRENT" icon={ShieldCheck} />
                 </div>
               )}
 

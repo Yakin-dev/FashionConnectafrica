@@ -64,9 +64,9 @@ export default function ContactPage() {
                 ))}
               </div>
               <div className="rounded-xl bg-[#C8A96A]/5 border border-[#C8A96A]/20 p-4 space-y-1">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#C8A96A]">Pilot Program</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#C8A96A]">Agency Verification</p>
                 <p className="text-[10px] text-[#6B6257] leading-relaxed">
-                  Agencies interested in free pilot access can message us here. We review all requests personally.
+                  Agencies interested in joining the platform can message us here. We review all requests personally.
                 </p>
               </div>
             </div>

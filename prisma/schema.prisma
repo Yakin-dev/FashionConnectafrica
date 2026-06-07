@@ -59,6 +59,10 @@ model User {
   name          String
   role          Role           @default(MODEL)
   status        UserStatus     @default(PENDING)
+  onboardingCompleted Boolean  @default(false)
+  onboardingStep      Int      @default(1)
+  intent              String?
+  userType            String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -72,6 +76,7 @@ model User {
   notifications     Notification[]
   pushSubscriptions PushSubscription[]
   contactMessages   ContactMessage[]
+  marketplaceProvider MarketplaceProvider?
 }
 
 model Profile {
@@ -95,6 +100,9 @@ model Model {
   // Model Attributes
   gender              String
   category            String               // Runway, Commercial, Editorial, Fitness, Beauty, Plus-size, Petite, Influencer
+  independent         Boolean              @default(true)
+  location            String?
+  availability        String?
   height              Float                // in cm
   waist               Float?               // in cm
   hips                Float?               // in cm
@@ -133,6 +141,7 @@ model Agency {
   cloudinaryPublicId  String?
   description         String?
   location            String
+  modelCount          String?
   isVerified          Boolean     @default(false)
   pilotStatus         PilotStatus @default(PENDING)
 
@@ -146,6 +155,8 @@ model Client {
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   company     String?
+  purpose     String?
+  location    String?
   website     String?
   bookings    Booking[]
   castings    Casting[]
@@ -296,4 +307,17 @@ model ContactMessage {
   message   String
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model MarketplaceProvider {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  businessName    String
+  serviceCategory String
+  location        String
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
