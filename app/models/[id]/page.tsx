@@ -269,7 +269,7 @@ export default function ModelProfilePage({ params }: { params: Promise<{ id: str
                         <span className="text-xs font-bold text-[#1D1A16] uppercase">{r.authorName}</span>
                         <ReviewStars rating={r.rating} />
                       </div>
-                      <p className="text-xs text-[#6B6257] leading-relaxed italic">"{r.comment}"</p>
+                      <p className="text-xs text-[#6B6257] leading-relaxed italic">&quot;{r.comment}&quot;</p>
                     </div>
                   ))}
                 </div>

@@ -18,7 +18,7 @@ export default function Footer() {
               <span className="text-[#C8A96A]">.Africa</span>
             </Link>
             <p className="text-xs text-[#6B6257] leading-relaxed max-w-sm">
-              Connecting Africa's elite fashion modeling talent, top agencies, and global luxury clients in a professional, high-end creative directory ecosystem.
+              Connecting Africa&apos;s elite fashion modeling talent, top agencies, and global luxury clients in a professional, high-end creative directory ecosystem.
             </p>
             <div className="flex gap-4 items-center">
               <a href="#" className="rounded-full bg-[#1D1A16] p-2 text-[#C8A96A] hover:bg-[#C8A96A] hover:text-[#11100E] transition-all" aria-label="Instagram">
@@ -101,7 +101,7 @@ export default function Footer() {
             &copy; {currentYear} ModelConnect.Africa. All rights reserved.
           </p>
           <p className="text-[10px] tracking-widest text-[#6B6257] uppercase flex items-center gap-1.5">
-            Designed for <span className="text-white font-semibold">Africa's Creative Future</span>
+            Designed for <span className="text-white font-semibold">Africa&apos;s Creative Future</span>
           </p>
         </div>
       </div>

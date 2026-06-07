@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import DashboardSidebar from "@/components/dashboard-sidebar";
@@ -8,7 +8,7 @@ import StatCard from "@/components/stat-card";
 import EmptyState from "@/components/empty-state";
 import {
   Users, Shield, BookOpen, UserCheck,
-  AlertCircle, ShoppingBag, Loader2, CheckCircle, XCircle
+  AlertCircle, Loader2, CheckCircle, XCircle
 } from "lucide-react";
 
 interface Agency {
@@ -33,7 +33,7 @@ export default function AdminDashboard() {
     { name: "Models Hub",     href: "/models",          icon: Users },
   ];
 
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     try {
       const [agenciesRes, usersRes, castingsRes, contactsRes] = await Promise.all([
         fetch("/api/admin/agencies"),
@@ -46,9 +46,11 @@ export default function AdminDashboard() {
       if (castingsRes.ok)  { const d = await castingsRes.json();  setCastings(d.castings ?? []); }
       if (contactsRes.ok)  { const d = await contactsRes.json();  setContacts(d.messages ?? []); }
     } catch { /* silent */ } finally { setLoading(false); }
-  }, []);
+  };
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    void fetchData();
+  }, []);
 
   const handleAgencyAction = async (id: string, action: "approve" | "reject" | "activate") => {
     setActionLoading(id + action);

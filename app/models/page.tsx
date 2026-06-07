@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import ModelCard from "@/components/model-card";
@@ -31,21 +31,20 @@ export default function ModelsPage() {
   const [searchQ, setSearchQ]           = useState("");
   const [filterCat, setFilterCat]       = useState("All");
 
-  const fetchModels = useCallback(async () => {
-    try {
-      const params = new URLSearchParams({ limit: "40" });
-      if (filterCat !== "All") params.set("category", filterCat);
-      if (searchQ.trim()) params.set("q", searchQ.trim());
-      const res = await fetch(`/api/models?${params}`);
-      if (res.ok) { const d = await res.json(); setDbModels(d.models ?? []); }
-    } catch { /* mock fallback */ } finally { setLoading(false); }
-  }, [filterCat, searchQ]);
-
   useEffect(() => {
-    setLoading(true);
-    const t = setTimeout(fetchModels, 300);
+    const fetchModels = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ limit: "40" });
+        if (filterCat !== "All") params.set("category", filterCat);
+        if (searchQ.trim()) params.set("q", searchQ.trim());
+        const res = await fetch(`/api/models?${params}`);
+        if (res.ok) { const d = await res.json(); setDbModels(d.models ?? []); }
+      } catch { /* mock fallback */ } finally { setLoading(false); }
+    };
+    const t = setTimeout(() => void fetchModels(), 300);
     return () => clearTimeout(t);
-  }, [fetchModels]);
+  }, [filterCat, searchQ]);
 
   // Build display list — DB first, mock if empty
   const displayModels = dbModels.length > 0
@@ -55,7 +54,7 @@ export default function ModelsPage() {
         agencyName: m.agency?.name ?? "Independent",
         avatarUrl: m.profileImageUrl ?? "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=400&q=80",
         gender: "Female" as const,
-        category: m.category as any,
+        category: m.category as "Runway" | "Editorial" | "Commercial" | "Fitness" | "Beauty" | "Plus-size" | "Petite" | "Influencer",
         height: m.height,
         waist: 60,
         hips: 89,

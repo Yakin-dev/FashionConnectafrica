@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import EmptyState from "@/components/empty-state";
-import { Bell, Loader2, CheckCheck } from "lucide-react";
+import { Loader2, CheckCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Notification {
@@ -30,19 +30,21 @@ export default function NotificationsPage() {
   const [markingAll, setMarkingAll]       = useState(false);
   const router = useRouter();
 
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const params = new URLSearchParams();
-      if (activeTab === "Unread") params.set("unread", "true");
-      else if (activeTab !== "All") params.set("type", activeTab);
-      params.set("limit", "50");
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (activeTab === "Unread") params.set("unread", "true");
+        else if (activeTab !== "All") params.set("type", activeTab);
+        params.set("limit", "50");
 
-      const res = await fetch(`/api/notifications?${params}`);
-      if (res.ok) { const d = await res.json(); setNotifications(d.notifications ?? []); }
-    } catch { /* silent */ } finally { setLoading(false); }
+        const res = await fetch(`/api/notifications?${params}`);
+        if (res.ok) { const d = await res.json(); setNotifications(d.notifications ?? []); }
+      } catch { /* silent */ } finally { setLoading(false); }
+    };
+    void fetchNotifications();
   }, [activeTab]);
-
-  useEffect(() => { setLoading(true); fetchNotifications(); }, [fetchNotifications]);
 
   const handleClick = async (n: Notification) => {
     if (!n.isRead) {

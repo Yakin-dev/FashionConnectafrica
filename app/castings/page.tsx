@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import SectionHeader from "@/components/section-header";
@@ -39,19 +39,20 @@ export default function CastingsPage() {
 
   const [filterLocation, setFilterLocation] = useState("All");
 
-  const fetchCastings = useCallback(async () => {
-    try {
-      const res = await fetch("/api/castings?limit=30");
-      if (res.ok) {
-        const d = await res.json();
-        setDbCastings(d.castings ?? []);
+  useEffect(() => {
+    const fetchCastings = async () => {
+      try {
+        const res = await fetch("/api/castings?limit=30");
+        if (res.ok) {
+          const d = await res.json();
+          setDbCastings(d.castings ?? []);
+        }
+      } catch { /* use mock fallback */ } finally {
+        setLoadingCastings(false);
       }
-    } catch { /* use mock fallback */ } finally {
-      setLoadingCastings(false);
-    }
+    };
+    void fetchCastings();
   }, []);
-
-  useEffect(() => { fetchCastings(); }, [fetchCastings]);
 
   // Merge DB + mock, deduplicate by id
   const allCastings: DBCasting[] = dbCastings.length > 0

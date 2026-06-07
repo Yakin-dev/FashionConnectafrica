@@ -2,15 +2,22 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
+
 export async function GET() {
   try {
     const { userId } = await auth();
+    console.log("[auth/redirect] userId:", userId);
     if (!userId) {
+      console.log("[auth/redirect] No userId, redirecting to login");
       return NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"));
     }
 
     const clerkUser = await currentUser();
+    console.log("[auth/redirect] clerkUser exists:", !!clerkUser);
     if (!clerkUser) {
+      console.log("[auth/redirect] No clerkUser, redirecting to login");
       return NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"));
     }
 

@@ -35,7 +35,7 @@ export default function LandingPage() {
               </span>
 
               <h1 className="font-serif text-4xl sm:text-6xl font-bold leading-tight sm:leading-none tracking-tight text-white uppercase">
-                Connecting Africa's <br />
+                Connecting Africa&apos;s <br />
                 <span className="text-[#C8A96A]">Elite Models</span> <br />
                 To Global Runway
               </h1>
@@ -255,7 +255,7 @@ export default function LandingPage() {
           />
 
           <blockquote className="font-serif text-xl sm:text-2xl italic leading-relaxed text-[#F8F5EF] max-w-2xl mx-auto">
-            "ModelConnect has completely simplified how we source East African talent for our couture editorial shoots. The statistics are precise, and booking is instantaneous."
+            &quot;ModelConnect has completely simplified how we source East African talent for our couture editorial shoots. The statistics are precise, and booking is instantaneous.&quot;
           </blockquote>
           
           <div>

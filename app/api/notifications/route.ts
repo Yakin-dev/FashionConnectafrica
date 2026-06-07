@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import type { NotificationType } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
       where: {
         userId: user.id,
         ...(onlyUnread ? { isRead: false } : {}),
-        ...(type ? { type: type as any } : {}),
+        ...(type ? { type: type as NotificationType } : {}),
       },
       orderBy: { createdAt: "desc" },
       take: limit,

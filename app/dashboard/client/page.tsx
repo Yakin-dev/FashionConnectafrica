@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import DashboardSidebar from "@/components/dashboard-sidebar";
@@ -34,7 +34,7 @@ export default function ClientDashboard() {
     { name: "Post Casting",   href: "/castings",         icon: BookOpen },
   ];
 
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     try {
       const [castingsRes, notifRes] = await Promise.all([
         fetch("/api/castings?mine=true"),
@@ -43,9 +43,13 @@ export default function ClientDashboard() {
       if (castingsRes.ok) { const d = await castingsRes.json(); setCastings(d.castings ?? []); }
       if (notifRes.ok)    { const d = await notifRes.json();    setNotifications(d.notifications ?? []); }
     } catch { /* silent */ } finally { setLoading(false); }
-  }, []);
+  };
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void (async () => { await fetchData(); })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadApplications = async (castingId: string) => {
     setSelected(castingId);
@@ -132,7 +136,7 @@ export default function ClientDashboard() {
                             <div>
                               <p className="font-bold text-[#1D1A16] uppercase">{app.model.user.name}</p>
                               <p className="text-[#6B6257] mt-0.5">{app.model.user.email}</p>
-                              {app.coverNote && <p className="text-[#6B6257] mt-1 italic">"{app.coverNote}"</p>}
+                              {app.coverNote && <p className="text-[#6B6257] mt-1 italic">&quot;{app.coverNote}&quot;</p>}
                             </div>
                             <span className={`text-[9px] font-bold px-3 py-1 rounded-full ${STATUS_COLOR[app.status] ?? "bg-gray-100 text-gray-600"}`}>{app.status}</span>
                           </div>

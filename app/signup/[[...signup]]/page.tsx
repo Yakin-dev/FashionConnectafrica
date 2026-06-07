@@ -19,8 +19,8 @@ export default function SignupPage() {
         </p>
       </div>
       <SignUp
-        forceRedirectUrl="/role-selection"
-        fallbackRedirectUrl="/role-selection"
+        forceRedirectUrl="/api/auth/redirect"
+        fallbackRedirectUrl="/api/auth/redirect"
         appearance={{
           elements: {
             rootBox: "w-full max-w-md",

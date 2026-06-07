@@ -8,6 +8,127 @@ import EmptyState from "@/components/empty-state";
 import { mockModels } from "@/lib/mock-data";
 import { SlidersHorizontal, Search, X } from "lucide-react";
 
+interface SidebarContentProps {
+  selectedGender: string;
+  selectedCategory: string;
+  selectedLocation: string;
+  selectedHeight: string;
+  selectedExperience: string;
+  onGenderChange: (gender: string) => void;
+  onCategoryChange: (category: string) => void;
+  onLocationChange: (location: string) => void;
+  onHeightChange: (height: string) => void;
+  onExperienceChange: (experience: string) => void;
+  onReset: () => void;
+}
+
+const locations = ["All", "Kigali, Rwanda", "Nairobi, Kenya", "Lagos, Nigeria", "Accra, Ghana"];
+const categories = ["All", "Runway", "Editorial", "Fitness", "Beauty", "Commercial", "Influencer"];
+
+const SidebarContent = ({
+  selectedGender,
+  selectedCategory,
+  selectedLocation,
+  selectedHeight,
+  selectedExperience,
+  onGenderChange,
+  onCategoryChange,
+  onLocationChange,
+  onHeightChange,
+  onExperienceChange,
+  onReset,
+}: SidebarContentProps) => (
+  <div className="space-y-6">
+    <div className="flex items-center justify-between border-b border-[#E7DED1] pb-4">
+      <h3 className="font-serif text-sm font-bold uppercase tracking-widest text-[#1D1A16]">Filters</h3>
+      <button
+        onClick={onReset}
+        className="text-[10px] font-bold uppercase tracking-widest text-[#C8A96A] hover:underline"
+      >
+        Reset All
+      </button>
+    </div>
+
+    {/* Gender Filter */}
+    <div className="space-y-2">
+      <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257]">Gender</label>
+      <div className="flex gap-2">
+        {["All", "Female", "Male"].map((g) => (
+          <button
+            key={g}
+            onClick={() => onGenderChange(g)}
+            className={`flex-1 rounded-lg py-2 text-xs font-semibold uppercase tracking-wider border transition-all ${
+              selectedGender === g
+                ? "bg-[#1D1A16] text-white border-transparent"
+                : "border-[#E7DED1] text-[#6B6257] hover:bg-white"
+            }`}
+          >
+            {g}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    {/* Category Filter */}
+    <div className="space-y-2">
+      <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257]">Category</label>
+      <select
+        value={selectedCategory}
+        onChange={(e) => onCategoryChange(e.target.value)}
+        className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none focus:border-[#C8A96A]"
+      >
+        {categories.map((c) => (
+          <option key={c} value={c}>{c}</option>
+        ))}
+      </select>
+    </div>
+
+    {/* Location Filter */}
+    <div className="space-y-2">
+      <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257]">Location</label>
+      <select
+        value={selectedLocation}
+        onChange={(e) => onLocationChange(e.target.value)}
+        className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none focus:border-[#C8A96A]"
+      >
+        {locations.map((loc) => (
+          <option key={loc} value={loc}>{loc}</option>
+        ))}
+      </select>
+    </div>
+
+    {/* Height bounds */}
+    <div className="space-y-2">
+      <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257]">Height Group</label>
+      <select
+        value={selectedHeight}
+        onChange={(e) => onHeightChange(e.target.value)}
+        className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none focus:border-[#C8A96A]"
+      >
+        <option value="All">All Heights</option>
+        <option value="tall">Tall (180cm+)</option>
+        <option value="medium">Medium (170cm - 179cm)</option>
+        <option value="petite">Petite (Under 170cm)</option>
+      </select>
+    </div>
+
+    {/* Experience Range */}
+    <div className="space-y-2">
+      <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257]">Experience</label>
+      <select
+        value={selectedExperience}
+        onChange={(e) => onExperienceChange(e.target.value)}
+        className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none focus:border-[#C8A96A]"
+      >
+        <option value="All">All Experience levels</option>
+        <option value="experienced">Elite Elite (4+ Years)</option>
+        <option value="intermediate">Rising Star (2 - 3 Years)</option>
+        <option value="new">New Face (Under 2 Years)</option>
+      </select>
+    </div>
+  </div>
+);
+
 export default function SearchPage() {
   // State variables for search and filtering
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,8 +141,17 @@ export default function SearchPage() {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   // Extract unique locations and categories dynamically
-  const locations = ["All", "Kigali, Rwanda", "Nairobi, Kenya", "Lagos, Nigeria", "Accra, Ghana"];
-  const categories = ["All", "Runway", "Editorial", "Fitness", "Beauty", "Commercial", "Influencer"];
+  const locationsArray = ["All", "Kigali, Rwanda", "Nairobi, Kenya", "Lagos, Nigeria", "Accra, Ghana"];
+  const categoriesArray = ["All", "Runway", "Editorial", "Fitness", "Beauty", "Commercial", "Influencer"];
+
+  const handleReset = () => {
+    setSearchQuery("");
+    setSelectedGender("All");
+    setSelectedCategory("All");
+    setSelectedLocation("All");
+    setSelectedHeight("All");
+    setSelectedExperience("All");
+  };
 
   // Core filter logic
   const filteredModels = useMemo(() => {
@@ -70,107 +200,6 @@ export default function SearchPage() {
       });
   }, [searchQuery, selectedGender, selectedCategory, selectedLocation, selectedHeight, selectedExperience, sortBy]);
 
-  const handleReset = () => {
-    setSearchQuery("");
-    setSelectedGender("All");
-    setSelectedCategory("All");
-    setSelectedLocation("All");
-    setSelectedHeight("All");
-    setSelectedExperience("All");
-  };
-
-  const SidebarContent = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-[#E7DED1] pb-4">
-        <h3 className="font-serif text-sm font-bold uppercase tracking-widest text-[#1D1A16]">Filters</h3>
-        <button
-          onClick={handleReset}
-          className="text-[10px] font-bold uppercase tracking-widest text-[#C8A96A] hover:underline"
-        >
-          Reset All
-        </button>
-      </div>
-
-      {/* Gender Filter */}
-      <div className="space-y-2">
-        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257]">Gender</label>
-        <div className="flex gap-2">
-          {["All", "Female", "Male"].map((g) => (
-            <button
-              key={g}
-              onClick={() => setSelectedGender(g)}
-              className={`flex-1 rounded-lg py-2 text-xs font-semibold uppercase tracking-wider border transition-all ${
-                selectedGender === g
-                  ? "bg-[#1D1A16] text-white border-transparent"
-                  : "border-[#E7DED1] text-[#6B6257] hover:bg-white"
-              }`}
-            >
-              {g}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Category Filter */}
-      <div className="space-y-2">
-        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257]">Category</label>
-        <select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none focus:border-[#C8A96A]"
-        >
-          {categories.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Location Filter */}
-      <div className="space-y-2">
-        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257]">Location</label>
-        <select
-          value={selectedLocation}
-          onChange={(e) => setSelectedLocation(e.target.value)}
-          className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none focus:border-[#C8A96A]"
-        >
-          {locations.map((loc) => (
-            <option key={loc} value={loc}>{loc}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Height bounds */}
-      <div className="space-y-2">
-        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257]">Height Group</label>
-        <select
-          value={selectedHeight}
-          onChange={(e) => setSelectedHeight(e.target.value)}
-          className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none focus:border-[#C8A96A]"
-        >
-          <option value="All">All Heights</option>
-          <option value="tall">Tall (180cm+)</option>
-          <option value="medium">Medium (170cm - 179cm)</option>
-          <option value="petite">Petite (Under 170cm)</option>
-        </select>
-      </div>
-
-      {/* Experience Range */}
-      <div className="space-y-2">
-        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257]">Experience</label>
-        <select
-          value={selectedExperience}
-          onChange={(e) => setSelectedExperience(e.target.value)}
-          className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none focus:border-[#C8A96A]"
-        >
-          <option value="All">All Experience levels</option>
-          <option value="experienced">Elite Elite (4+ Years)</option>
-          <option value="intermediate">Rising Star (2 - 3 Years)</option>
-          <option value="new">New Face (Under 2 Years)</option>
-        </select>
-      </div>
-    </div>
-  );
-
   return (
     <>
       <Navbar />
@@ -214,7 +243,19 @@ export default function SearchPage() {
           <div className="flex flex-col md:flex-row gap-8 items-start">
             {/* Desktop Sidebar Filters */}
             <aside className="hidden md:block w-64 shrink-0 bg-white border border-[#E7DED1] rounded-2xl p-5 shadow-sm">
-              <SidebarContent />
+              <SidebarContent
+                selectedGender={selectedGender}
+                selectedCategory={selectedCategory}
+                selectedLocation={selectedLocation}
+                selectedHeight={selectedHeight}
+                selectedExperience={selectedExperience}
+                onGenderChange={setSelectedGender}
+                onCategoryChange={setSelectedCategory}
+                onLocationChange={setSelectedLocation}
+                onHeightChange={setSelectedHeight}
+                onExperienceChange={setSelectedExperience}
+                onReset={handleReset}
+              />
             </aside>
 
             {/* Results Grid */}
@@ -250,7 +291,19 @@ export default function SearchPage() {
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <SidebarContent />
+              <SidebarContent
+                selectedGender={selectedGender}
+                selectedCategory={selectedCategory}
+                selectedLocation={selectedLocation}
+                selectedHeight={selectedHeight}
+                selectedExperience={selectedExperience}
+                onGenderChange={setSelectedGender}
+                onCategoryChange={setSelectedCategory}
+                onLocationChange={setSelectedLocation}
+                onHeightChange={setSelectedHeight}
+                onExperienceChange={setSelectedExperience}
+                onReset={handleReset}
+              />
             </div>
             <button
               onClick={() => setIsMobileFilterOpen(false)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import DashboardSidebar from "@/components/dashboard-sidebar";
@@ -8,7 +8,7 @@ import StatCard from "@/components/stat-card";
 import EmptyState from "@/components/empty-state";
 import { mockModels } from "@/lib/mock-data";
 import {
-  Users, BookOpen, UserPlus, Eye, CheckCircle, Trash2,
+  Users, BookOpen, UserPlus, Eye, CheckCircle,
   Clock, AlertCircle, Loader2, ShieldCheck, XCircle
 } from "lucide-react";
 
@@ -68,7 +68,7 @@ export default function AgencyDashboard() {
     { name: "Manage Castings",    href: "/castings",         icon: BookOpen },
   ];
 
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     try {
       const [agencyRes, modelsRes, castingsRes] = await Promise.all([
         fetch("/api/agency/me"),
@@ -83,9 +83,11 @@ export default function AgencyDashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    void fetchData();
+  }, []);
 
   const handleRequestPilot = async () => {
     setPilotLoading(true);

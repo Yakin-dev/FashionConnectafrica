@@ -1,7 +1,7 @@
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import SectionHeader from "@/components/section-header";
-import { Sparkles, Award, Globe, Users } from "lucide-react";
+import { Award, Globe, Users } from "lucide-react";
 
 export default function AboutPage() {
   return (
@@ -17,7 +17,7 @@ export default function AboutPage() {
 
           <div className="space-y-6 text-sm text-[#6B6257] leading-relaxed">
             <p className="font-serif text-lg text-[#1D1A16] italic leading-relaxed text-center max-w-2xl mx-auto">
-              "We believe that premium African creative talent belongs on the global runway. ModelConnect.Africa is the bridge that turns digital visual portfolios into international contracts."
+              &quot;We believe that premium African creative talent belongs on the global runway. ModelConnect.Africa is the bridge that turns digital visual portfolios into international contracts.&quot;
             </p>
             
             <p>

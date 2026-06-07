@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import DashboardSidebar from "@/components/dashboard-sidebar";
@@ -63,7 +63,7 @@ export default function ModelDashboard() {
     { name: "Castings Hub", href: "/castings",        icon: BookOpen },
   ];
 
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     try {
       const [modelRes, notifRes] = await Promise.all([
         fetch("/api/user/me"),
@@ -83,9 +83,13 @@ export default function ModelDashboard() {
         setNotifications(d.notifications ?? []);
       }
     } catch { /* use fallback */ } finally { setLoading(false); }
-  }, []);
+  };
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void (async () => { await fetchData(); })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
