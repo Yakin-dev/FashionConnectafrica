@@ -1,31 +1,35 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, X, Bell, User, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAuth, UserButton, SignInButton } from "@clerk/nextjs";
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { Menu, X, Bell, User, Sparkles } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { useSession } from "next-auth/react"
+import { UserDropdown } from "@/components/user-dropdown"
 
 export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const pathname = usePathname();
-  const { isSignedIn } = useAuth();
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [recentNotifs, setRecentNotifs] = useState<Array<{ id: string; title: string; message: string; createdAt: string }>>([]);
+  const [isOpen, setIsOpen] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const pathname = usePathname()
+  const { data: session, status } = useSession()
+  const isSignedIn = status === "authenticated"
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [recentNotifs, setRecentNotifs] = useState<
+    Array<{ id: string; title: string; message: string; createdAt: string }>
+  >([])
 
   useEffect(() => {
-    if (!isSignedIn) return;
+    if (!isSignedIn) return
     fetch("/api/notifications?limit=5")
-      .then((r) => r.ok ? r.json() : null)
+      .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (!d) return;
-        setUnreadCount(d.unreadCount ?? 0);
-        setRecentNotifs(d.notifications ?? []);
+        if (!d) return
+        setUnreadCount(d.unreadCount ?? 0)
+        setRecentNotifs(d.notifications ?? [])
       })
-      .catch(() => {});
-  }, [isSignedIn]);
+      .catch(() => {})
+  }, [isSignedIn])
 
   const navLinks = [
     { name: "Models", href: "/models" },
@@ -34,16 +38,32 @@ export default function Navbar() {
     { name: "Marketplace", href: "/marketplace" },
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
-  ];
+  ]
 
-  const displayNotifs = recentNotifs.length > 0
-    ? recentNotifs.map((n) => ({ id: n.id, title: n.title, body: n.message, time: new Date(n.createdAt).toLocaleDateString() }))
-    : isSignedIn
-    ? []
-    : [
-        { id: "1", title: "New Casting Call", body: "Vogue Africa published a runway casting in Kigali.", time: "1h ago" },
-        { id: "2", title: "Welcome!", body: "Your account is set up. Select your role to continue.", time: "Just now" },
-      ];
+  const displayNotifs =
+    recentNotifs.length > 0
+      ? recentNotifs.map((n) => ({
+          id: n.id,
+          title: n.title,
+          body: n.message,
+          time: new Date(n.createdAt).toLocaleDateString(),
+        }))
+      : isSignedIn
+      ? []
+      : [
+          { id: "1", title: "New Casting Call", body: "Vogue Africa published a runway casting in Kigali.", time: "1h ago" },
+          { id: "2", title: "Welcome!", body: "Create an account to start receiving opportunities.", time: "Just now" },
+        ]
+
+  const role = (session?.user as any)?.role ?? "MODEL"
+  const ROLE_DASHBOARD: Record<string, string> = {
+    MODEL: "/dashboard/model",
+    AGENCY: "/dashboard/agency",
+    CLIENT: "/dashboard/client",
+    ADMIN: "/dashboard/admin",
+    MARKETPLACE_PROVIDER: "/marketplace",
+  }
+  const dashboardHref = ROLE_DASHBOARD[role] ?? "/"
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-[#E7DED1]/70 bg-[#F8F5EF]/85 backdrop-blur-md">
@@ -67,21 +87,19 @@ export default function Navbar() {
               {navLinks.map((link) => {
                 const isActive =
                   pathname === link.href ||
-                  (link.href !== "/" && pathname.startsWith(link.href.split("?")[0]));
+                  (link.href !== "/" && pathname.startsWith(link.href.split("?")[0]))
                 return (
                   <Link
                     key={link.name}
                     href={link.href}
                     className={cn(
                       "text-xs font-semibold uppercase tracking-widest transition-all duration-300 hover:text-[#C8A96A]",
-                      isActive
-                        ? "text-[#C8A96A] border-b border-[#C8A96A] pb-1"
-                        : "text-[#6B6257]"
+                      isActive ? "text-[#C8A96A] border-b border-[#C8A96A] pb-1" : "text-[#6B6257]"
                     )}
                   >
                     {link.name}
                   </Link>
-                );
+                )
               })}
             </div>
           </div>
@@ -118,13 +136,15 @@ export default function Navbar() {
                   <div className="space-y-3">
                     {displayNotifs.length === 0 ? (
                       <p className="text-[10px] text-[#6B6257] text-center py-2">No notifications yet</p>
-                    ) : displayNotifs.map((n) => (
-                      <div key={n.id} className="rounded-lg p-2 hover:bg-[#F8F5EF] transition-colors">
-                        <h4 className="text-xs font-semibold text-[#1D1A16]">{n.title}</h4>
-                        <p className="text-[11px] text-[#6B6257] mt-0.5">{n.body}</p>
-                        <span className="text-[9px] text-[#C8A96A] mt-1 block">{n.time}</span>
-                      </div>
-                    ))}
+                    ) : (
+                      displayNotifs.map((n) => (
+                        <div key={n.id} className="rounded-lg p-2 hover:bg-[#F8F5EF] transition-colors">
+                          <h4 className="text-xs font-semibold text-[#1D1A16]">{n.title}</h4>
+                          <p className="text-[11px] text-[#6B6257] mt-0.5">{n.body}</p>
+                          <span className="text-[9px] text-[#C8A96A] mt-1 block">{n.time}</span>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -133,20 +153,21 @@ export default function Navbar() {
             {isSignedIn ? (
               <>
                 <Link
-                  href="/dashboard/model"
+                  href={dashboardHref}
                   className="text-xs font-semibold uppercase tracking-widest text-[#6B6257] hover:text-[#1D1A16] transition-colors"
                 >
                   Dashboard
                 </Link>
-                <UserButton />
+                <UserDropdown />
               </>
             ) : (
               <>
-                <SignInButton mode="redirect" forceRedirectUrl="/api/auth/redirect">
-                  <button className="text-xs font-semibold uppercase tracking-widest text-[#6B6257] hover:text-[#1D1A16] transition-colors">
-                    Sign In
-                  </button>
-                </SignInButton>
+                <Link
+                  href="/login"
+                  className="text-xs font-semibold uppercase tracking-widest text-[#6B6257] hover:text-[#1D1A16] transition-colors"
+                >
+                  Sign In
+                </Link>
                 <Link
                   href="/signup"
                   className="flex items-center gap-1.5 overflow-hidden rounded-full bg-[#1D1A16] px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-all"
@@ -172,7 +193,6 @@ export default function Navbar() {
                 </span>
               )}
             </button>
-
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="rounded-lg p-2 text-[#1D1A16] hover:bg-[#E7DED1]/50 transition-colors"
@@ -188,7 +208,7 @@ export default function Navbar() {
         <div className="md:hidden border-t border-[#E7DED1] bg-[#F8F5EF] px-4 py-6 shadow-lg">
           <div className="flex flex-col gap-4">
             {navLinks.map((link) => {
-              const isActive = pathname === link.href;
+              const isActive = pathname === link.href
               return (
                 <Link
                   key={link.name}
@@ -196,26 +216,24 @@ export default function Navbar() {
                   onClick={() => setIsOpen(false)}
                   className={cn(
                     "text-xs font-bold uppercase tracking-widest py-2 px-3 rounded-lg transition-colors",
-                    isActive
-                      ? "bg-[#C8A96A] text-white"
-                      : "text-[#6B6257] hover:bg-[#E7DED1]/40"
+                    isActive ? "bg-[#C8A96A] text-white" : "text-[#6B6257] hover:bg-[#E7DED1]/40"
                   )}
                 >
                   {link.name}
                 </Link>
-              );
+              )
             })}
             <div className="mt-4 border-t border-[#E7DED1]/60 pt-4 flex flex-col gap-3">
               {isSignedIn ? (
                 <div className="flex items-center justify-between px-2">
                   <Link
-                    href="/dashboard/model"
+                    href={dashboardHref}
                     onClick={() => setIsOpen(false)}
                     className="text-xs font-bold uppercase tracking-widest text-[#1D1A16]"
                   >
                     Dashboard
                   </Link>
-                  <UserButton />
+                  <UserDropdown />
                 </div>
               ) : (
                 <>
@@ -240,5 +258,5 @@ export default function Navbar() {
         </div>
       )}
     </nav>
-  );
+  )
 }

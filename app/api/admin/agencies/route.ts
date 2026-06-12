@@ -1,16 +1,15 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth"
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
 
-// GET /api/admin/agencies — List all agencies (admin only)
 export async function GET() {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await auth()
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const user = await prisma.user.findUnique({ where: { clerkUserId: userId } });
+    const user = await prisma.user.findUnique({ where: { id: session.user.id } })
     if (!user || user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 
     const agencies = await prisma.agency.findMany({
@@ -19,11 +18,11 @@ export async function GET() {
         _count: { select: { models: true, castings: true } },
       },
       orderBy: { user: { createdAt: "desc" } },
-    });
+    })
 
-    return NextResponse.json({ agencies });
+    return NextResponse.json({ agencies })
   } catch (error) {
-    console.error("[admin/agencies GET]", error);
-    return NextResponse.json({ error: "Failed to fetch agencies" }, { status: 500 });
+    console.error("[admin/agencies GET]", error)
+    return NextResponse.json({ error: "Failed to fetch agencies" }, { status: 500 })
   }
 }

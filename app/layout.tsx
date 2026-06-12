@@ -1,20 +1,20 @@
-import type { Metadata } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
-import "./globals.css";
-import { cn } from "@/lib/utils";
-import { ClerkProvider } from "@clerk/nextjs";
+import type { Metadata } from "next"
+import { Playfair_Display, Inter } from "next/font/google"
+import "./globals.css"
+import { cn } from "@/lib/utils"
+import { SessionProvider } from "@/components/session-provider"
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
   display: "swap",
-});
+})
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
-});
+})
 
 export const metadata: Metadata = {
   title: "ModelConnect.Africa | Premium Fashion & Modelling Talent Network",
@@ -27,15 +27,15 @@ export const metadata: Metadata = {
     url: "https://modelconnect.africa",
     type: "website",
   },
-};
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
-    <ClerkProvider>
+    <SessionProvider>
       <html
         lang="en"
         className={cn(
@@ -48,6 +48,6 @@ export default function RootLayout({
           {children}
         </body>
       </html>
-    </ClerkProvider>
-  );
+    </SessionProvider>
+  )
 }

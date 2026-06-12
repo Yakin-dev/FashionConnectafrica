@@ -1,41 +1,40 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { createAndDeliverNotification } from "@/lib/notifications";
-import { z } from "zod";
+import { auth } from "@/auth"
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { createAndDeliverNotification } from "@/lib/notifications"
+import { z } from "zod"
 
 const schema = z.object({
   applicationId: z.string(),
   status: z.enum(["PENDING", "SHORTLISTED", "APPROVED", "REJECTED"]),
   notes: z.string().optional(),
-});
+})
 
-// GET applications for a casting (agency/client who owns it, or admin)
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await auth()
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const user = await prisma.user.findUnique({
-      where: { clerkUserId: userId },
+      where: { id: session.user.id },
       include: { agency: true, client: true },
-    });
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    })
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
-    const { id: castingId } = await params;
+    const { id: castingId } = await params
 
-    const casting = await prisma.casting.findUnique({ where: { id: castingId } });
-    if (!casting) return NextResponse.json({ error: "Casting not found" }, { status: 404 });
+    const casting = await prisma.casting.findUnique({ where: { id: castingId } })
+    if (!casting) return NextResponse.json({ error: "Casting not found" }, { status: 404 })
 
     const isOwner =
       (user.agency && casting.agencyId === user.agency.id) ||
       (user.client && casting.clientId === user.client.id) ||
-      user.role === "ADMIN";
+      user.role === "ADMIN"
 
-    if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     const applications = await prisma.castingApplication.findMany({
       where: { castingId },
@@ -47,54 +46,52 @@ export async function GET(
         },
       },
       orderBy: { appliedAt: "desc" },
-    });
+    })
 
-    return NextResponse.json({ applications });
+    return NextResponse.json({ applications })
   } catch (error) {
-    console.error("[castings/applications GET]", error);
-    return NextResponse.json({ error: "Failed to fetch applications" }, { status: 500 });
+    console.error("[castings/applications GET]", error)
+    return NextResponse.json({ error: "Failed to fetch applications" }, { status: 500 })
   }
 }
 
-// PATCH — update application status
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await auth()
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const user = await prisma.user.findUnique({
-      where: { clerkUserId: userId },
+      where: { id: session.user.id },
       include: { agency: true, client: true },
-    });
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    })
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
-    const { id: castingId } = await params;
-    const body = await req.json();
-    const { applicationId, status, notes } = schema.parse(body);
+    const { id: castingId } = await params
+    const body = await req.json()
+    const { applicationId, status, notes } = schema.parse(body)
 
-    const casting = await prisma.casting.findUnique({ where: { id: castingId } });
+    const casting = await prisma.casting.findUnique({ where: { id: castingId } })
     const isOwner =
       (user.agency && casting?.agencyId === user.agency.id) ||
       (user.client && casting?.clientId === user.client.id) ||
-      user.role === "ADMIN";
+      user.role === "ADMIN"
 
-    if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     const application = await prisma.castingApplication.update({
       where: { id: applicationId },
       data: { status, notes },
       include: { model: { include: { user: true } }, casting: true },
-    });
+    })
 
-    // Notify model of status change
     const statusMessages: Record<string, string> = {
       SHORTLISTED: "You have been shortlisted",
       APPROVED: "Congratulations! You have been approved",
       REJECTED: "Your application was not successful this time",
-    };
+    }
 
     if (statusMessages[status]) {
       await createAndDeliverNotification({
@@ -103,15 +100,15 @@ export async function PATCH(
         message: `${statusMessages[status]} for "${application.casting.title}"`,
         type: "APPLICATION",
         actionUrl: "/dashboard/model",
-      }).catch(console.error);
+      }).catch(console.error)
     }
 
-    return NextResponse.json({ application });
+    return NextResponse.json({ application })
   } catch (error) {
-    console.error("[castings/applications PATCH]", error);
+    console.error("[castings/applications PATCH]", error)
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
+      return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
     }
-    return NextResponse.json({ error: "Failed to update application" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to update application" }, { status: 500 })
   }
 }

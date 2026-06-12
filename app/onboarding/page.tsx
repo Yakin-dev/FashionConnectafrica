@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Sparkles, ArrowRight, ArrowLeft, CheckCircle2, User, Building, Briefcase, Calendar, Store, Shield } from "lucide-react";
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { update } = useSession();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export default function OnboardingPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to save onboarding");
-      
+      await update();
       router.push(data.redirectUrl);
     } catch (err: any) {
       setError(err.message);

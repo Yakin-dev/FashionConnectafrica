@@ -14,14 +14,8 @@
 
 ---
 
-## ✅ PHASE 1 — Clerk Authentication (COMPLETE)
-- [x] ClerkProvider in `app/layout.tsx`
-- [x] `proxy.ts` — protects /dashboard/** (Next.js 16 uses proxy.ts not middleware.ts)
-- [x] `/api/user/sync`, `/api/user/role`, `/api/user/me`, `/api/auth/redirect`
-- [x] `app/signup/page.tsx` — Clerk `<SignUp forceRedirectUrl="/role-selection">`
-- [x] `app/login/page.tsx` — Clerk `<SignIn forceRedirectUrl="/api/auth/redirect">`
-- [x] `app/role-selection/page.tsx` — saves role to DB, creates model/agency/client record
-- [x] `components/navbar.tsx` — useAuth, UserButton, SignInButton
+## ✅ PHASE 1 — Clerk Authentication (SUPERSEDED by Phase 15)
+~~Clerk has been fully removed. See Phase 15.~~
 
 ---
 
@@ -95,107 +89,144 @@
 
 ## ✅ PHASE 13 — TypeScript / Type Safety (COMPLETE)
 - [x] `tsc --noEmit` — zero errors
-- [x] Zod v4: `.errors` → `.issues` fixed in all 7 API routes
-- [x] Clerk v7: `afterSignInUrl` → `forceRedirectUrl`, removed `afterSignOutUrl` from UserButton
-- [x] DashboardSidebar role type widened to include CLIENT + MARKETPLACE_PROVIDER
-- [x] MockModel review shape fixed (date field)
-- [x] useState<string> for category fields
+- [x] Zod v4 fixes, Clerk v7 prop fixes, DashboardSidebar role type widened
 
 ---
 
-## ⚠️ PHASE 14 — Build (H: DRIVE WORKAROUND)
-
-**Root cause:** H: drive is exFAT — Windows junction points (required by Turbopack) only work on NTFS.
-
-**Workaround applied:** Project copied to `C:\next-build\modelconnect-africa-src` for build.
-- Build runs from C: using `npx next build`
-- Vercel deployment: builds on Linux — no junction point issue at all
-
-**Local dev:** `npm run dev` works perfectly on H: (dev server doesn't need junction points).
-
-**To deploy to Vercel:**
-1. Push repo to GitHub
-2. Import in Vercel — it auto-detects Next.js
-3. Add all .env variables in Vercel dashboard
-4. Deploy — Vercel builds on Linux, no H: drive issue
+## ✅ PHASE 14 — Onboarding Flow (COMPLETE)
+- [x] `app/onboarding/page.tsx` — 3-step: purpose → details → confirm
+- [x] `/api/onboarding` — sets role, creates role-specific profile, marks onboardingCompleted=true
+- [x] `lib/user-routing.ts` — getDashboardRouteForUser() maps role → dashboard path
 
 ---
 
-## Environment Variables Needed
+## 🔄 PHASE 15 — Auth Migration: Clerk → NextAuth (IN PROGRESS)
+
+**Context:** Clerk completely removed. Replaced with NextAuth v5 (Auth.js) using
+Credentials provider + JWT sessions + bcrypt. No OAuth providers. No Prisma adapter.
+
+### Already Done ✅
+- [x] Removed `@clerk/nextjs` package
+- [x] Installed `next-auth@beta`, `bcryptjs`, `@types/bcryptjs`
+- [x] `prisma/schema.prisma` — removed `clerkUserId`, added `password`, `firstName`, `lastName`, `username`, `avatarUrl`, `emailVerified` to User model
+- [x] `auth.config.ts` (root) — edge-safe JWT config for middleware (no Prisma)
+- [x] `auth.ts` (root) — full NextAuth config with Credentials + bcrypt + DB session refresh on `update()`
+- [x] `middleware.ts` — replaced Clerk middleware with NextAuth JWT-based route protection
+- [x] `lib/auth.ts` — `getCurrentUser()` now uses NextAuth session (no Clerk)
+- [x] `types/next-auth.d.ts` — TypeScript type extensions for Session and JWT
+
+### Still TODO ❌
+- [ ] `proxy.ts` — DELETE (dead Clerk file)
+- [ ] `app/api/auth/[...nextauth]/route.ts` — CREATE NextAuth route handler
+- [ ] `app/api/auth/signup/route.ts` — CREATE registration endpoint (email+password+name, bcrypt hash, returns 201)
+- [ ] `app/api/auth/redirect/route.ts` — DELETE (Clerk redirect flow, no longer needed)
+- [ ] `app/api/user/sync/route.ts` — DELETE (Clerk sync, no longer needed)
+- [ ] `app/api/user/role/route.ts` — DELETE (role set in onboarding, not Clerk)
+- [ ] `app/layout.tsx` — replace `<ClerkProvider>` with `<SessionProvider>` from `components/session-provider.tsx`
+- [ ] `components/session-provider.tsx` — CREATE thin wrapper around NextAuth SessionProvider
+- [ ] `components/user-dropdown.tsx` — CREATE professional avatar dropdown (replaces Clerk UserButton)
+- [ ] `components/navbar.tsx` — replace `useAuth()` / `UserButton` / `SignInButton` with `useSession()` / `UserDropdown`
+- [ ] `app/signup/[[...signup]]/page.tsx` — DELETE; CREATE `app/signup/page.tsx` with custom form
+- [ ] `app/login/[[...login]]/page.tsx` — DELETE; CREATE `app/login/page.tsx` with custom form
+- [ ] `app/onboarding/page.tsx` — add `useSession().update()` call after POST succeeds (refreshes JWT with new role)
+- [ ] `.env.local` — remove all CLERK_* vars; add `AUTH_SECRET` and `NEXTAUTH_URL=http://localhost:3000`
+
+#### API Routes — Replace `auth()` from Clerk + `clerkUserId` lookup with NextAuth session:
+All routes change pattern from:
+```ts
+// OLD
+const { userId } = await auth()  // @clerk/nextjs/server
+const user = await prisma.user.findUnique({ where: { clerkUserId: userId } })
+// NEW
+const session = await auth()     // @/auth
+if (!session?.user?.id) return 401
+const user = await prisma.user.findUnique({ where: { id: session.user.id } })
+```
+
+- [ ] `app/api/user/me/route.ts`
+- [ ] `app/api/agency/me/route.ts`
+- [ ] `app/api/agency/models/route.ts`
+- [ ] `app/api/agency/pilot/route.ts`
+- [ ] `app/api/admin/agencies/route.ts`
+- [ ] `app/api/admin/agencies/[id]/route.ts`
+- [ ] `app/api/admin/users/route.ts`
+- [ ] `app/api/castings/route.ts`
+- [ ] `app/api/castings/[id]/apply/route.ts`
+- [ ] `app/api/castings/[id]/applications/route.ts`
+- [ ] `app/api/models/route.ts`
+- [ ] `app/api/models/[id]/route.ts`
+- [ ] `app/api/upload/route.ts`
+- [ ] `app/api/notifications/route.ts`
+- [ ] `app/api/contact/route.ts`
+- [ ] `app/api/push/subscribe/route.ts`
+- [ ] `app/api/push/unsubscribe/route.ts`
+- [ ] `app/api/onboarding/route.ts`
+- [ ] `app/api/marketplace/route.ts`
+
+#### Final Steps:
+- [ ] `npx prisma db push` — apply schema changes to Neon DB
+- [ ] `scripts/seed-admin.ts` — CREATE seed script for admin user
+- [ ] Run seed: admin email=niyikizaoberto@gmail.com, username=Yakin-dev, default password=ModelConnect@Admin2024
+- [ ] `npm run dev` — verify app starts with no errors
+- [ ] Test signup → onboarding → dashboard flow end-to-end
+- [ ] Test login → dashboard flow end-to-end
+- [ ] Test logout works
+- [ ] Test role-based redirects
+
+---
+
+## Environment Variables (Current State)
 
 ```env
+# ─── Database (Neon) ──────────────────────────────────────────────────────────
 DATABASE_URL=postgresql://...pooler...
 DIRECT_DATABASE_URL=postgresql://...direct...
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...   ← REQUIRED (currently empty)
-CLERK_SECRET_KEY=sk_...                     ← REQUIRED (currently empty)
-CLOUDINARY_CLOUD_NAME=duslhrrdh            ✅ set
-CLOUDINARY_API_KEY=...                      ✅ set
-CLOUDINARY_API_SECRET=...                   ✅ set
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=              ← generate with: npx web-push generate-vapid-keys
+
+# ─── NextAuth (replaces Clerk) ────────────────────────────────────────────────
+AUTH_SECRET=<generate: npx auth secret>
+NEXTAUTH_URL=http://localhost:3000
+
+# ─── App URL ──────────────────────────────────────────────────────────────────
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# ─── Cloudinary ───────────────────────────────────────────────────────────────
+CLOUDINARY_CLOUD_NAME=duslhrrdh
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+# ─── Push Notifications (VAPID) ───────────────────────────────────────────────
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=mailto:admin@modelconnect.africa
-RESEND_API_KEY=                            ← optional email backup
+
+# ─── Email (optional) ─────────────────────────────────────────────────────────
+RESEND_API_KEY=
 EMAIL_FROM=ModelConnect.Africa <notifications@modelconnect.africa>
-NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 ---
 
-## All Files — Final State
+## Files — Current State
 
 | File | Status |
 |------|--------|
-| `prisma/schema.prisma` | ✅ Complete schema |
-| `prisma.config.ts` | ✅ DIRECT_DATABASE_URL |
-| `lib/prisma.ts` | ✅ PrismaPg adapter |
-| `lib/auth.ts` | ✅ getCurrentUser |
-| `lib/cloudinary-server.ts` | ✅ Real upload |
-| `lib/cloudinary.ts` | ✅ Client validation |
-| `lib/notifications.ts` | ✅ createAndDeliverNotification |
-| `lib/push.ts` | ✅ VAPID push |
-| `lib/email.ts` | ✅ Resend email |
-| `proxy.ts` | ✅ Clerk middleware (Next.js 16) |
-| `next.config.ts` | ✅ Image domains |
-| `app/layout.tsx` | ✅ ClerkProvider |
-| `app/manifest.ts` | ✅ PWA |
-| `app/page.tsx` | ✅ Pilot banner |
-| `app/signup/page.tsx` | ✅ Clerk SignUp |
-| `app/login/page.tsx` | ✅ Clerk SignIn |
-| `app/role-selection/page.tsx` | ✅ Real DB |
-| `app/contact/page.tsx` | ✅ Real DB |
-| `app/notifications/page.tsx` | ✅ Real DB |
-| `app/castings/page.tsx` | ✅ Real DB + mock |
-| `app/castings/[id]/page.tsx` | ✅ Real DB + mock |
-| `app/models/page.tsx` | ✅ Real DB + mock |
-| `app/models/[id]/page.tsx` | ✅ Real DB + mock |
-| `app/dashboard/model/page.tsx` | ✅ Real DB + mock |
-| `app/dashboard/agency/page.tsx` | ✅ Real DB + mock |
-| `app/dashboard/admin/page.tsx` | ✅ Real DB |
-| `app/dashboard/client/page.tsx` | ✅ Created |
-| `components/navbar.tsx` | ✅ Clerk + real bell |
-| `components/upload-box.tsx` | ✅ Real Cloudinary |
-| `components/dashboard-sidebar.tsx` | ✅ Role types widened |
-| `components/notification-permission.tsx` | ✅ PWA push UI |
-| `public/sw.js` | ✅ Service worker |
-| `scripts/check-db.ts` | ✅ PrismaPg adapter |
-| `app/api/user/sync` | ✅ |
-| `app/api/user/role` | ✅ |
-| `app/api/user/me` | ✅ |
-| `app/api/auth/redirect` | ✅ |
-| `app/api/agency/me` | ✅ |
-| `app/api/agency/models` | ✅ |
-| `app/api/agency/pilot` | ✅ |
-| `app/api/admin/agencies` | ✅ |
-| `app/api/admin/agencies/[id]` | ✅ |
-| `app/api/admin/users` | ✅ |
-| `app/api/castings` | ✅ |
-| `app/api/castings/[id]/apply` | ✅ |
-| `app/api/castings/[id]/applications` | ✅ |
-| `app/api/models` | ✅ |
-| `app/api/models/[id]` | ✅ |
-| `app/api/upload` | ✅ |
-| `app/api/notifications` | ✅ |
-| `app/api/push/subscribe` | ✅ |
-| `app/api/push/unsubscribe` | ✅ |
-| `app/api/contact` | ✅ |
-| `app/api/marketplace` | ✅ |
+| `auth.config.ts` | ✅ NEW — edge-safe JWT config |
+| `auth.ts` | ✅ NEW — NextAuth with Credentials + bcrypt |
+| `middleware.ts` | ✅ UPDATED — NextAuth JWT route protection |
+| `proxy.ts` | ❌ DELETE — dead Clerk file |
+| `lib/auth.ts` | ✅ UPDATED — uses NextAuth session |
+| `types/next-auth.d.ts` | ✅ NEW — TypeScript type extensions |
+| `prisma/schema.prisma` | ✅ UPDATED — removed clerkUserId, added password etc. |
+| `app/layout.tsx` | ❌ UPDATE — replace ClerkProvider |
+| `components/navbar.tsx` | ❌ UPDATE — replace Clerk hooks |
+| `components/session-provider.tsx` | ❌ CREATE |
+| `components/user-dropdown.tsx` | ❌ CREATE |
+| `app/signup/page.tsx` | ❌ CREATE (custom form) |
+| `app/login/page.tsx` | ❌ CREATE (custom form) |
+| `app/onboarding/page.tsx` | ❌ UPDATE — add session.update() |
+| `app/api/auth/[...nextauth]/route.ts` | ❌ CREATE |
+| `app/api/auth/signup/route.ts` | ❌ CREATE |
+| `app/api/auth/redirect/route.ts` | ❌ DELETE |
+| `app/api/user/sync/route.ts` | ❌ DELETE |
+| `app/api/user/role/route.ts` | ❌ DELETE |
+| All other API routes (19 files) | ❌ UPDATE — replace Clerk auth |

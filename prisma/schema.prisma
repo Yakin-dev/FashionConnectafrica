@@ -53,29 +53,34 @@ enum NotificationType {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  clerkUserId   String?        @unique
-  email         String         @unique
-  name          String
-  role          Role           @default(MODEL)
-  status        UserStatus     @default(PENDING)
-  onboardingCompleted Boolean  @default(false)
-  onboardingStep      Int      @default(1)
+  id                  String     @id @default(uuid())
+  email               String     @unique
+  password            String?
+  name                String
+  firstName           String?
+  lastName            String?
+  username            String?    @unique
+  avatarUrl           String?
+  emailVerified       DateTime?
+  role                Role       @default(MODEL)
+  status              UserStatus @default(PENDING)
+  onboardingCompleted Boolean    @default(false)
+  onboardingStep      Int        @default(1)
   intent              String?
   userType            String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 
-  profile       Profile?
-  model         Model?
-  agency        Agency?
-  client        Client?
+  profile             Profile?
+  model               Model?
+  agency              Agency?
+  client              Client?
 
-  sentMessages      Message[]        @relation("SentMessages")
-  receivedMessages  Message[]        @relation("ReceivedMessages")
-  notifications     Notification[]
-  pushSubscriptions PushSubscription[]
-  contactMessages   ContactMessage[]
+  sentMessages        Message[]        @relation("SentMessages")
+  receivedMessages    Message[]        @relation("ReceivedMessages")
+  notifications       Notification[]
+  pushSubscriptions   PushSubscription[]
+  contactMessages     ContactMessage[]
   marketplaceProvider MarketplaceProvider?
 }
 
@@ -96,35 +101,31 @@ model Model {
   id                  String               @id @default(uuid())
   userId              String               @unique
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Model Attributes
+
   gender              String
-  category            String               // Runway, Commercial, Editorial, Fitness, Beauty, Plus-size, Petite, Influencer
+  category            String
   independent         Boolean              @default(true)
   location            String?
   availability        String?
-  height              Float                // in cm
-  waist               Float?               // in cm
-  hips                Float?               // in cm
-  chest               Float?               // in cm
+  height              Float
+  waist               Float?
+  hips                Float?
+  chest               Float?
   shoeSize            Float?
   eyeColor            String?
   hairColor           String?
   experienceYears     Int                  @default(0)
-  
-  // Verification and Status
+
   isVerified          Boolean              @default(false)
   isAvailable         Boolean              @default(true)
   profileCompletion   Int                  @default(10)
   viewsCount          Int                  @default(0)
   profileImageUrl     String?
   profileImagePublicId String?
-  
-  // Agency relationship (optional, some models are freelance)
+
   agencyId            String?
   agency              Agency?              @relation(fields: [agencyId], references: [id])
-  
-  // Collections
+
   applications        CastingApplication[]
   bookings            Booking[]
   taggedEvents        Event[]              @relation("TaggedModels")
@@ -153,7 +154,7 @@ model Client {
   id          String    @id @default(uuid())
   userId      String    @unique
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   company     String?
   purpose     String?
   location    String?
@@ -202,7 +203,7 @@ model Booking {
   client      Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   modelId     String
   model       Model         @relation(fields: [modelId], references: [id], onDelete: Cascade)
-  
+
   date        DateTime
   duration    String
   budget      Float
@@ -218,7 +219,7 @@ model Event {
   location            String
   description         String?
   createdAt           DateTime     @default(now())
-  
+
   images              EventImage[]
   taggedModels        Model[]      @relation("TaggedModels")
 }
@@ -238,7 +239,7 @@ model Message {
   sender      User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   receiverId  String
   receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
-  
+
   content     String
   isRead      Boolean  @default(false)
   sentAt      DateTime @default(now())
@@ -248,7 +249,7 @@ model MarketplaceService {
   id                  String   @id @default(uuid())
   title               String
   providerName        String
-  providerRole        String   // Photographer, Makeup Artist, Runway Coach, Fashion Stylist, Studio Rental, Event Organizer
+  providerRole        String
   description         String
   price               Float
   location            String
@@ -313,11 +314,11 @@ model MarketplaceProvider {
   id              String   @id @default(uuid())
   userId          String   @unique
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   businessName    String
   serviceCategory String
   location        String
-  
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

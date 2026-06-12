@@ -1,23 +1,27 @@
-import { auth } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth"
+import { prisma } from "@/lib/prisma"
 
+/**
+ * Returns the full Prisma User record for the currently authenticated user,
+ * or null if unauthenticated.
+ */
 export async function getCurrentUser() {
   try {
-    const { userId } = await auth();
+    const session = await auth()
+    if (!session?.user?.id) return null
 
-    if (!userId) {
-      return null;
-    }
-
-    const user = await prisma.user.findUnique({
-      where: {
-        clerkUserId: userId,
-      },
-    });
-
-    return user;
-  } catch (error) {
-    console.error("Failed to get current user:", error);
-    return null;
+    return prisma.user.findUnique({
+      where: { id: session.user.id },
+    })
+  } catch {
+    return null
   }
+}
+
+/**
+ * Returns the session user object (lightweight — from JWT, no DB round-trip).
+ */
+export async function getSessionUser() {
+  const session = await auth()
+  return session?.user ?? null
 }
