@@ -2,11 +2,11 @@
 
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { Award, MapPin, Users, Sparkles } from "lucide-react";
 import Link from "next/link";
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 28 },
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
 };

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { signIn } from "next-auth/react"
 import { Sparkles, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react"
+import { GoogleSignInButton } from "@/components/google-sign-in-button"
 
 const ROLE_DASHBOARD: Record<string, string> = {
   MODEL: "/dashboard/model",
@@ -43,7 +44,6 @@ function LoginForm() {
       return
     }
 
-    // Fetch updated session to get role and onboarding status
     const sessionRes = await fetch("/api/auth/session")
     const session = await sessionRes.json()
     const user = session?.user as any
@@ -82,6 +82,16 @@ function LoginForm() {
               <span>{error}</span>
             </div>
           )}
+
+          {/* Google sign-in */}
+          <GoogleSignInButton callbackUrl={callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/auth/redirect"} />
+
+          {/* Divider */}
+          <div className="my-6 flex items-center gap-3">
+            <div className="flex-1 h-px bg-[#E7DED1]" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#9B9189]">or</span>
+            <div className="flex-1 h-px bg-[#E7DED1]" />
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { signIn } from "next-auth/react"
 import { Sparkles, Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
+import { GoogleSignInButton } from "@/components/google-sign-in-button"
 
 function PasswordStrength({ password }: { password: string }) {
   const checks = [
@@ -54,7 +55,6 @@ function SignupForm() {
     const pwd = form.get("password") as string
     const name = `${firstName} ${lastName}`.trim() || firstName
 
-    // Step 1: Register
     const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -68,7 +68,6 @@ function SignupForm() {
       return
     }
 
-    // Step 2: Sign in automatically
     const result = await signIn("credentials", {
       email,
       password: pwd,
@@ -104,6 +103,16 @@ function SignupForm() {
               <span>{error}</span>
             </div>
           )}
+
+          {/* Google sign-up */}
+          <GoogleSignInButton />
+
+          {/* Divider */}
+          <div className="my-6 flex items-center gap-3">
+            <div className="flex-1 h-px bg-[#E7DED1]" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#9B9189]">or sign up with email</span>
+            <div className="flex-1 h-px bg-[#E7DED1]" />
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-2 gap-3">

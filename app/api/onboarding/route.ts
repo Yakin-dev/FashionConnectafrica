@@ -13,8 +13,9 @@ export async function POST(req: Request) {
     const { purpose, intentData } = data
 
     let role: Role = Role.MODEL
+    if (purpose === "photographer" || purpose === "studio") role = Role.MARKETPLACE_PROVIDER
+    if (purpose === "designer" || purpose === "client" || purpose === "event") role = Role.CLIENT
     if (purpose === "agency") role = Role.AGENCY
-    if (purpose === "client" || purpose === "event") role = Role.CLIENT
     if (purpose === "provider") role = Role.MARKETPLACE_PROVIDER
     if (purpose === "admin") role = Role.ADMIN
 
@@ -79,17 +80,22 @@ export async function POST(req: Request) {
         },
       })
     } else if (role === Role.CLIENT) {
+      const company = intentData.companyName || intentData.agencyName || user.name;
+      const clientPurpose =
+        purpose === "designer"
+          ? `Fashion Designer — ${intentData.designFocus || "General"}`
+          : intentData.clientPurpose || purpose;
       await prisma.client.upsert({
         where: { userId: user.id },
         update: {
-          company: intentData.companyName || user.name,
-          purpose: intentData.clientPurpose || purpose,
+          company,
+          purpose: clientPurpose,
           location: intentData.location || null,
         },
         create: {
           userId: user.id,
-          company: intentData.companyName || user.name,
-          purpose: intentData.clientPurpose || purpose,
+          company,
+          purpose: clientPurpose,
           location: intentData.location || null,
         },
       })
@@ -102,18 +108,24 @@ export async function POST(req: Request) {
         },
       })
     } else if (role === Role.MARKETPLACE_PROVIDER) {
+      const serviceCategory =
+        purpose === "photographer"
+          ? intentData.specialty || "Photographer"
+          : purpose === "studio"
+          ? intentData.service || "Content Studio"
+          : intentData.service || "General";
       await prisma.marketplaceProvider.upsert({
         where: { userId: user.id },
         update: {
           businessName: intentData.businessName || user.name,
-          serviceCategory: intentData.service || "General",
-          location: intentData.location || "Not specified",
+          serviceCategory,
+          location: intentData.location || "Kigali, Rwanda",
         },
         create: {
           userId: user.id,
           businessName: intentData.businessName || user.name,
-          serviceCategory: intentData.service || "General",
-          location: intentData.location || "Not specified",
+          serviceCategory,
+          location: intentData.location || "Kigali, Rwanda",
         },
       })
       await prisma.notification.create({

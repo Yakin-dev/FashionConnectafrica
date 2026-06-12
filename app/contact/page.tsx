@@ -3,12 +3,12 @@
 import { useState } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { Mail, Phone, MapPin, CheckCircle, Loader2, AlertCircle, Sparkles } from "lucide-react";
 
-const ROLES = ["Model", "Agency", "Client", "Marketplace Provider", "Other"];
+const ROLES = ["Fashion Model", "Photographer", "Fashion Designer", "Content Studio Owner", "Model Agency", "Brand / Client", "Other"];
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
 };

@@ -1,48 +1,69 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
-import ServiceCard from "@/components/service-card";
 import EmptyState from "@/components/empty-state";
-import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import { motion, type Variants } from "framer-motion";
+import { Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 const CATEGORIES = [
   "All",
-  "Fashion Photographer",
-  "Makeup Artist",
+  "Photographer",
+  "Content Studio",
   "Runway Coach",
-  "Studio Rental",
+  "Makeup Artist",
+  "Stylist",
 ];
 
-const stagger = {
+const stagger: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.1 } },
 };
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
 
-import { mockServices } from "@/lib/mock-data";
+interface Provider {
+  id: string;
+  businessName: string;
+  serviceCategory: string;
+  location: string;
+  user: { name: string; avatarUrl: string | null };
+  verified?: boolean;
+}
 
 export default function MarketplacePage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [bookedServiceId, setBookedServiceId] = useState<string | null>(null);
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const services = mockServices;
+  useEffect(() => {
+    const fetchProviders = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/marketplace-providers");
+        if (res.ok) {
+          const data = await res.json();
+          setProviders(data.providers ?? []);
+        }
+      } catch {
+        /* silent */
+      } finally {
+        setLoading(false);
+      }
+    };
+    void fetchProviders();
+  }, []);
 
-  const filtered = services.filter(
-    (s) => selectedCategory === "All" || s.providerRole === selectedCategory
+  const filtered = providers.filter(
+    (p) =>
+      selectedCategory === "All" ||
+      p.serviceCategory.toLowerCase().includes(selectedCategory.toLowerCase())
   );
-
-  const handleBookService = (id: string) => {
-    setBookedServiceId(id);
-    setTimeout(() => setBookedServiceId(null), 3000);
-  };
 
   return (
     <>
@@ -86,19 +107,36 @@ export default function MarketplacePage() {
             ))}
           </div>
 
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center gap-3 py-24 text-[#6B6257]">
+              <Loader2 className="h-5 w-5 animate-spin text-[#C8A96A]" />
+              <span className="text-sm">Loading services...</span>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="py-16">
               <EmptyState
-                title="No services found"
-                description="No creative professionals are listed here yet. List your services from your dashboard."
+                title={selectedCategory !== "All" ? `No ${selectedCategory}s listed yet` : "No services yet"}
+                description={
+                  selectedCategory !== "All"
+                    ? `No ${selectedCategory.toLowerCase()} professionals have listed their services yet. Check back soon.`
+                    : "Be the first creative professional to list your services on ModelConnect Africa."
+                }
               />
-              <div className="text-center mt-6">
+              <div className="text-center mt-6 flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
                   href="/signup"
                   className="inline-flex rounded-full bg-[#1D1A16] px-7 py-3 text-sm font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] hover:text-[#11100E] transition-colors"
                 >
                   List Your Services
                 </Link>
+                {selectedCategory !== "All" && (
+                  <button
+                    onClick={() => setSelectedCategory("All")}
+                    className="inline-flex rounded-full border border-[#E7DED1] bg-white px-7 py-3 text-sm font-bold uppercase tracking-widest text-[#6B6257] hover:border-[#1D1A16] hover:text-[#1D1A16] transition-colors"
+                  >
+                    View All
+                  </button>
+                )}
               </div>
             </div>
           ) : (
@@ -108,34 +146,38 @@ export default function MarketplacePage() {
               animate="show"
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             >
-              {filtered.map((service) => (
-                <motion.div key={service.id} variants={fadeUp}>
-                  <ServiceCard service={service} onBook={handleBookService} />
+              {filtered.map((provider) => (
+                <motion.div key={provider.id} variants={fadeUp}>
+                  <div className="bg-white border border-[#E7DED1] rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-start gap-4">
+                      <div className="h-14 w-14 rounded-xl bg-[#F8F5EF] flex items-center justify-center shrink-0 overflow-hidden">
+                        {provider.user.avatarUrl ? (
+                          <img src={provider.user.avatarUrl} alt={provider.businessName} className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="text-2xl font-serif font-bold text-[#C8A96A]">
+                            {provider.businessName.charAt(0)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-[#1D1A16] truncate">{provider.businessName}</p>
+                        <p className="text-xs text-[#C8A96A] font-semibold uppercase tracking-wider mt-0.5">{provider.serviceCategory}</p>
+                        <p className="text-xs text-[#6B6257] mt-1">{provider.location}</p>
+                      </div>
+                    </div>
+                    <Link
+                      href={`/marketplace/${provider.id}`}
+                      className="mt-4 flex w-full items-center justify-center rounded-full border border-[#1D1A16] px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-[#1D1A16] hover:bg-[#1D1A16] hover:text-white transition-colors"
+                    >
+                      View Profile
+                    </Link>
+                  </div>
                 </motion.div>
               ))}
             </motion.div>
           )}
         </div>
       </main>
-
-      {/* Booking toast */}
-      {bookedServiceId && (
-        <motion.div
-          initial={{ opacity: 0, y: 20, x: 0 }}
-          animate={{ opacity: 1, y: 0, x: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          className="fixed bottom-6 right-6 z-50 rounded-2xl border border-[#E7DED1] bg-white p-5 shadow-2xl flex items-center gap-3 max-w-xs"
-        >
-          <div className="rounded-full bg-emerald-100 p-2.5 text-emerald-600 shrink-0">
-            <Sparkles className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-[#1D1A16]">Inquiry Sent</p>
-            <p className="text-xs text-[#6B6257] mt-0.5">The provider will be in touch with details.</p>
-          </div>
-        </motion.div>
-      )}
-
       <Footer />
     </>
   );

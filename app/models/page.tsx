@@ -5,7 +5,7 @@ import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import ModelCard from "@/components/model-card";
 import EmptyState from "@/components/empty-state";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import Link from "next/link";
 import { Loader2, Search, Sparkles, SlidersHorizontal } from "lucide-react";
 
@@ -24,12 +24,12 @@ interface DBModel {
 
 const CATEGORIES = ["All", "Runway", "Editorial", "Commercial", "Fitness", "Beauty", "Plus-size", "Petite"];
 
-const stagger = {
+const stagger: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.07 } },
 };
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 18 },
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };

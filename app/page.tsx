@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { Sparkles, ArrowRight, ShieldCheck, Award, Briefcase, Camera, Users, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
@@ -75,12 +75,12 @@ const FEATURES = [
   },
 ];
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
 };
 
-const stagger = {
+const stagger: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.12 } },
 };
@@ -111,7 +111,7 @@ export default function LandingPage() {
         onMouseLeave={() => setIsAutoPlaying(true)}
       >
         {/* Slide backgrounds */}
-        <AnimatePresence mode="crossfade" initial={false}>
+        <AnimatePresence mode="sync" initial={false}>
           <motion.div
             key={current}
             initial={{ opacity: 0 }}
