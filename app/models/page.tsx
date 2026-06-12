@@ -4,11 +4,10 @@ import { useState, useEffect } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import ModelCard from "@/components/model-card";
-import SectionHeader from "@/components/section-header";
 import EmptyState from "@/components/empty-state";
-import { mockModels } from "@/lib/mock-data";
+import { motion } from "framer-motion";
 import Link from "next/link";
-import { SlidersHorizontal, Loader2, Search } from "lucide-react";
+import { Loader2, Search, Sparkles, SlidersHorizontal } from "lucide-react";
 
 interface DBModel {
   id: string;
@@ -25,11 +24,21 @@ interface DBModel {
 
 const CATEGORIES = ["All", "Runway", "Editorial", "Commercial", "Fitness", "Beauty", "Plus-size", "Petite"];
 
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+};
+
 export default function ModelsPage() {
-  const [dbModels, setDbModels]         = useState<DBModel[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [searchQ, setSearchQ]           = useState("");
-  const [filterCat, setFilterCat]       = useState("All");
+  const [dbModels, setDbModels] = useState<DBModel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQ, setSearchQ] = useState("");
+  const [filterCat, setFilterCat] = useState("All");
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -40,93 +49,136 @@ export default function ModelsPage() {
         if (searchQ.trim()) params.set("q", searchQ.trim());
         const res = await fetch(`/api/models?${params}`);
         if (res.ok) { const d = await res.json(); setDbModels(d.models ?? []); }
-      } catch { /* mock fallback */ } finally { setLoading(false); }
+      } catch { /* silent */ } finally { setLoading(false); }
     };
     const t = setTimeout(() => void fetchModels(), 300);
     return () => clearTimeout(t);
   }, [filterCat, searchQ]);
 
-  // Build display list — DB first, mock if empty
-  const displayModels = dbModels.length > 0
-    ? dbModels.map((m) => ({
-        id: m.id,
-        name: m.user.name,
-        agencyName: m.agency?.name ?? "Independent",
-        avatarUrl: m.profileImageUrl ?? "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=400&q=80",
-        gender: "Female" as const,
-        category: m.category as "Runway" | "Editorial" | "Commercial" | "Fitness" | "Beauty" | "Plus-size" | "Petite" | "Influencer",
-        height: m.height,
-        waist: 60,
-        hips: 89,
-        shoeSize: 39,
-        location: "",
-        isVerified: m.isVerified,
-        profileCompletion: 80,
-        viewsCount: m.viewsCount,
-        experienceYears: 0,
-        bio: "",
-        portfolioImages: [],
-        portfolioVideos: [],
-        reviews: m.reviews.map((r) => ({ id: "", authorName: "", rating: r.rating, comment: "", date: "" })),
-        experienceTimeline: [],
-      }))
-    : mockModels.filter((m) => {
-        const matchCat = filterCat === "All" || m.category === filterCat;
-        const matchQ   = !searchQ.trim() || m.name.toLowerCase().includes(searchQ.toLowerCase());
-        return matchCat && matchQ;
-      });
+  const displayModels = dbModels.map((m) => ({
+    id: m.id,
+    name: m.user.name,
+    agencyName: m.agency?.name ?? "Independent",
+    avatarUrl: m.profileImageUrl ?? "",
+    gender: "Female" as const,
+    category: m.category as "Runway" | "Editorial" | "Commercial" | "Fitness" | "Beauty" | "Plus-size" | "Petite" | "Influencer",
+    height: m.height,
+    waist: 60,
+    hips: 89,
+    shoeSize: 39,
+    location: "Kigali, Rwanda",
+    isVerified: m.isVerified,
+    profileCompletion: 80,
+    viewsCount: m.viewsCount,
+    experienceYears: 0,
+    bio: "",
+    portfolioImages: [],
+    portfolioVideos: [],
+    reviews: m.reviews.map((r) => ({ id: "", authorName: "", rating: r.rating, comment: "", date: "" })),
+    experienceTimeline: [],
+  }));
 
   return (
     <>
       <Navbar />
-      <main className="flex-1 bg-[#F8F5EF] py-16 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <main className="flex-1 bg-[#F8F5EF]">
 
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12 border-b border-[#E7DED1]/70 pb-8">
-            <SectionHeader title="The Roster" subtitle="Africa's Leading Visual Stories" />
-            <Link href="/search"
-              className="inline-flex items-center gap-2 rounded-full border border-[#1D1A16] px-6 py-3 text-xs font-bold uppercase tracking-widest text-[#1D1A16] hover:bg-[#1D1A16] hover:text-white transition-all w-fit">
-              <SlidersHorizontal className="h-4 w-4" /> Filter & Search
+        {/* Page header */}
+        <div className="bg-[#1D1A16] py-14 sm:py-20 text-white text-center">
+          <div className="mx-auto max-w-3xl px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="space-y-3"
+            >
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#C8A96A]/10 border border-[#C8A96A]/30 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[#C8A96A]">
+                <Sparkles className="h-3.5 w-3.5" /> Kigali, Rwanda
+              </span>
+              <h1 className="font-serif text-4xl sm:text-5xl font-bold uppercase">Model Roster</h1>
+              <p className="text-base text-white/60">Browse verified models and portfolios.</p>
+            </motion.div>
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+
+          {/* Search + filters */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-10">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6B6257]" />
+              <input
+                type="text"
+                value={searchQ}
+                onChange={(e) => setSearchQ(e.target.value)}
+                placeholder="Search by name..."
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-[#E7DED1] bg-white text-sm focus:outline-none focus:border-[#C8A96A] transition-colors"
+              />
+            </div>
+            <Link
+              href="/search"
+              className="inline-flex items-center gap-2 rounded-xl border border-[#E7DED1] bg-white px-5 py-3 text-sm font-semibold text-[#6B6257] hover:border-[#1D1A16] hover:text-[#1D1A16] transition-colors w-fit"
+            >
+              <SlidersHorizontal className="h-4 w-4" /> Advanced Filter
             </Link>
           </div>
 
-          {/* Search + Category filter */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-10">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6B6257]" />
-              <input type="text" value={searchQ} onChange={(e) => setSearchQ(e.target.value)}
-                placeholder="Search models..." className="w-full pl-9 pr-4 py-3 rounded-xl border border-[#E7DED1] bg-white text-xs focus:outline-none focus:border-[#C8A96A]" />
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {CATEGORIES.map((cat) => (
-                <button key={cat} onClick={() => setFilterCat(cat)}
-                  className={`rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors ${filterCat === cat ? "bg-[#1D1A16] text-white" : "bg-white border border-[#E7DED1] text-[#6B6257] hover:border-[#1D1A16]"}`}>
-                  {cat}
-                </button>
-              ))}
-            </div>
+          {/* Category pills */}
+          <div className="flex flex-wrap gap-2 mb-10">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setFilterCat(cat)}
+                className={`rounded-full px-5 py-2.5 text-xs font-bold uppercase tracking-widest transition-all ${
+                  filterCat === cat
+                    ? "bg-[#1D1A16] text-white shadow-sm"
+                    : "bg-white border border-[#E7DED1] text-[#6B6257] hover:border-[#1D1A16] hover:text-[#1D1A16]"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
 
           {loading ? (
-            <div className="flex items-center gap-2 text-xs text-[#6B6257] py-12">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading models...
+            <div className="flex items-center justify-center gap-3 py-24 text-[#6B6257]">
+              <Loader2 className="h-5 w-5 animate-spin text-[#C8A96A]" />
+              <span className="text-sm">Loading models...</span>
             </div>
           ) : displayModels.length === 0 ? (
-            <EmptyState title="No models found" description="No models match your search. Try different filters." />
-          ) : (
-            <>
-              {dbModels.length === 0 && (
-                <p className="text-[10px] text-[#6B6257] uppercase tracking-widest mb-6 font-bold">
-                  Showing sample profiles — sign in to see live roster
-                </p>
+            <div className="py-16">
+              <EmptyState
+                title={searchQ || filterCat !== "All" ? "No models found" : "No models yet"}
+                description={
+                  searchQ || filterCat !== "All"
+                    ? "Try a different search or category."
+                    : "Be the first to join the roster. Create your model profile today."
+                }
+              />
+              {!searchQ && filterCat === "All" && (
+                <div className="text-center mt-6">
+                  <Link
+                    href="/signup"
+                    className="inline-flex rounded-full bg-[#1D1A16] px-7 py-3 text-sm font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] hover:text-[#11100E] transition-colors"
+                  >
+                    Join as Model
+                  </Link>
+                </div>
               )}
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {displayModels.map((model) => (
-                  <ModelCard key={model.id} model={model} />
-                ))}
-              </div>
-            </>
+            </div>
+          ) : (
+            <motion.div
+              variants={stagger}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+            >
+              {displayModels.map((model) => (
+                <motion.div key={model.id} variants={fadeUp}>
+                  <ModelCard model={model} />
+                </motion.div>
+              ))}
+            </motion.div>
           )}
         </div>
       </main>

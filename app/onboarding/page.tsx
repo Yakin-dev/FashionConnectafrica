@@ -158,7 +158,7 @@ export default function OnboardingPage() {
                       <label className="text-xs font-bold uppercase tracking-widest text-[#6B6257]">Location</label>
                       <input 
                         type="text" 
-                        placeholder="e.g. Lagos, Nigeria"
+                        placeholder="e.g. Kigali, Rwanda"
                         className="w-full p-3 bg-white border border-[#E7DED1] rounded-xl focus:outline-none focus:border-[#C8A96A] text-sm"
                         value={intentData.location || ""}
                         onChange={(e) => handleIntentChange("location", e.target.value)}

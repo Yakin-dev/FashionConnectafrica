@@ -22,7 +22,7 @@ interface SidebarContentProps {
   onReset: () => void;
 }
 
-const locations = ["All", "Kigali, Rwanda", "Nairobi, Kenya", "Lagos, Nigeria", "Accra, Ghana"];
+const locations = ["All", "Kigali, Rwanda"];
 const categories = ["All", "Runway", "Editorial", "Fitness", "Beauty", "Commercial", "Influencer"];
 
 const SidebarContent = ({
@@ -141,7 +141,7 @@ export default function SearchPage() {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   // Extract unique locations and categories dynamically
-  const locationsArray = ["All", "Kigali, Rwanda", "Nairobi, Kenya", "Lagos, Nigeria", "Accra, Ghana"];
+  const locationsArray = ["All", "Kigali, Rwanda"];
   const categoriesArray = ["All", "Runway", "Editorial", "Fitness", "Beauty", "Commercial", "Influencer"];
 
   const handleReset = () => {

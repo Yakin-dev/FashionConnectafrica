@@ -3,10 +3,9 @@
 import { useState, useEffect } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
-import SectionHeader from "@/components/section-header";
 import EmptyState from "@/components/empty-state";
-import { mockCastings } from "@/lib/mock-data";
-import { CheckCircle, MapPin, DollarSign, Calendar, Loader2, AlertCircle, X } from "lucide-react";
+import { motion } from "framer-motion";
+import { CheckCircle, MapPin, DollarSign, Calendar, Loader2, AlertCircle, X, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 interface DBCasting {
@@ -23,21 +22,29 @@ interface DBCasting {
   _count: { applications: number };
 }
 
-const LOCATIONS = ["All", "Kigali", "Nairobi", "Lagos", "Accra", "Johannesburg"];
+const CATEGORIES = ["All", "Runway", "Editorial", "Commercial", "Fitness", "Beauty"];
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+};
 
 export default function CastingsPage() {
   const [dbCastings, setDbCastings] = useState<DBCasting[]>([]);
-  const [loadingCastings, setLoadingCastings] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [filterCat, setFilterCat] = useState("All");
 
-  // Apply modal state
-  const [selectedId, setSelectedId]   = useState<string | null>(null);
-  const [coverNote, setCoverNote]     = useState("");
-  const [applying, setApplying]       = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [coverNote, setCoverNote] = useState("");
+  const [applying, setApplying] = useState(false);
   const [applySuccess, setApplySuccess] = useState(false);
-  const [applyError, setApplyError]   = useState<string | null>(null);
-  const [appliedIds, setAppliedIds]   = useState<Set<string>>(new Set());
-
-  const [filterLocation, setFilterLocation] = useState("All");
+  const [applyError, setApplyError] = useState<string | null>(null);
+  const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchCastings = async () => {
@@ -47,40 +54,24 @@ export default function CastingsPage() {
           const d = await res.json();
           setDbCastings(d.castings ?? []);
         }
-      } catch { /* use mock fallback */ } finally {
-        setLoadingCastings(false);
+      } catch { /* silent */ } finally {
+        setLoading(false);
       }
     };
     void fetchCastings();
   }, []);
 
-  // Merge DB + mock, deduplicate by id
-  const allCastings: DBCasting[] = dbCastings.length > 0
-    ? dbCastings
-    : mockCastings.map((m) => ({
-        id: m.id,
-        title: m.title,
-        description: m.description,
-        category: "General",
-        requirements: m.requirements,
-        location: m.location,
-        date: m.date,
-        budget: Number(m.budget),
-        isActive: true,
-        agency: null,
-        _count: { applications: 0 },
-      }));
-
-  const filtered = allCastings.filter(
-    (c) => filterLocation === "All" || c.location.toLowerCase().includes(filterLocation.toLowerCase())
+  const filtered = dbCastings.filter(
+    (c) => filterCat === "All" || c.category?.toLowerCase() === filterCat.toLowerCase()
   );
 
-  const activeCasting = allCastings.find((c) => c.id === selectedId);
+  const activeCasting = dbCastings.find((c) => c.id === selectedId);
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedId) return;
-    setApplying(true); setApplyError(null);
+    setApplying(true);
+    setApplyError(null);
     try {
       const res = await fetch(`/api/castings/${selectedId}/apply`, {
         method: "POST",
@@ -94,141 +85,222 @@ export default function CastingsPage() {
       setTimeout(() => { setApplySuccess(false); setSelectedId(null); setCoverNote(""); }, 2500);
     } catch (err) {
       setApplyError(err instanceof Error ? err.message : "Failed to apply");
-    } finally { setApplying(false); }
+    } finally {
+      setApplying(false);
+    }
   };
 
   return (
     <>
       <Navbar />
-      <main className="flex-1 bg-[#F8F5EF] py-16 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <main className="flex-1 bg-[#F8F5EF]">
 
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12 border-b border-[#E7DED1]/70 pb-8">
-            <SectionHeader title="Casting Briefs" subtitle="Elite Global Runway Openings" />
-            <div className="flex gap-3 items-center">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257]">Location:</span>
-              <select value={filterLocation} onChange={(e) => setFilterLocation(e.target.value)}
-                className="rounded-xl border border-[#E7DED1] bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-[#6B6257] focus:outline-none">
-                {LOCATIONS.map((l) => <option key={l}>{l}</option>)}
-              </select>
-            </div>
+        {/* Page header */}
+        <div className="bg-[#1D1A16] py-14 sm:py-20 text-white text-center">
+          <div className="mx-auto max-w-3xl px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="space-y-3"
+            >
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#C8A96A]/10 border border-[#C8A96A]/30 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[#C8A96A]">
+                <Sparkles className="h-3.5 w-3.5" /> Kigali Opportunities
+              </span>
+              <h1 className="font-serif text-4xl sm:text-5xl font-bold uppercase">Casting Briefs</h1>
+              <p className="text-base text-white/60">Open casting opportunities in Kigali, Rwanda.</p>
+            </motion.div>
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+
+          {/* Category filters */}
+          <div className="flex flex-wrap gap-2 mb-10">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setFilterCat(cat)}
+                className={`rounded-full px-5 py-2.5 text-xs font-bold uppercase tracking-widest transition-all ${
+                  filterCat === cat
+                    ? "bg-[#1D1A16] text-white shadow-sm"
+                    : "bg-white border border-[#E7DED1] text-[#6B6257] hover:border-[#1D1A16] hover:text-[#1D1A16]"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
 
-          {loadingCastings ? (
-            <div className="flex items-center gap-2 text-xs text-[#6B6257] py-12">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading castings...
+          {loading ? (
+            <div className="flex items-center justify-center gap-3 py-24 text-[#6B6257]">
+              <Loader2 className="h-5 w-5 animate-spin text-[#C8A96A]" />
+              <span className="text-sm">Loading castings...</span>
             </div>
           ) : filtered.length === 0 ? (
-            <EmptyState title="No castings available" description="No casting briefs posted yet. Check back soon." />
+            <div className="py-16">
+              <EmptyState
+                title="No castings yet"
+                description="No casting briefs have been posted yet. Agencies can post castings from their dashboard."
+              />
+              <div className="text-center mt-6">
+                <Link
+                  href="/signup"
+                  className="inline-flex rounded-full bg-[#1D1A16] px-7 py-3 text-sm font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] hover:text-[#11100E] transition-colors"
+                >
+                  Join as Agency
+                </Link>
+              </div>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <motion.div
+              variants={stagger}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
               {filtered.map((c) => {
                 const alreadyApplied = appliedIds.has(c.id);
                 return (
-                  <div key={c.id} className="group rounded-2xl border border-[#E7DED1] bg-white p-6 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col justify-between">
+                  <motion.div
+                    key={c.id}
+                    variants={fadeUp}
+                    className="group rounded-2xl border border-[#E7DED1] bg-white p-6 shadow-sm hover:shadow-xl hover:border-[#C8A96A]/30 transition-all duration-400 flex flex-col justify-between"
+                  >
                     <div className="space-y-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-[#C8A96A]/10 px-3 py-1 text-xs font-bold text-[#C8A96A] uppercase tracking-wider">
-                          <DollarSign className="h-3 w-3" />{c.budget.toLocaleString()} USD
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[#C8A96A]/10 px-3 py-1 text-xs font-bold text-[#C8A96A] uppercase tracking-wider">
+                          <DollarSign className="h-3 w-3" />{c.budget.toLocaleString()} RWF
                         </span>
-                        <span className="text-[10px] font-semibold text-[#6B6257] uppercase tracking-widest flex items-center gap-1">
-                          <MapPin className="h-3.5 w-3.5 text-[#C8A96A]" />{c.location}
+                        <span className="flex items-center gap-1 text-xs text-[#6B6257]">
+                          <MapPin className="h-3.5 w-3.5 text-[#C8A96A] shrink-0" />
+                          {c.location}
                         </span>
                       </div>
+
                       <div className="space-y-2">
                         <Link href={`/castings/${c.id}`}>
                           <h3 className="font-serif text-lg font-bold text-[#1D1A16] leading-snug group-hover:text-[#C8A96A] transition-colors cursor-pointer">
                             {c.title}
                           </h3>
                         </Link>
-                        <p className="text-xs text-[#6B6257] leading-relaxed line-clamp-3">{c.description}</p>
+                        <p className="text-sm text-[#6B6257] leading-relaxed line-clamp-3">{c.description}</p>
                       </div>
-                      <div className="rounded-xl bg-[#F8F5EF] p-3 text-[11px] text-[#6B6257] leading-relaxed">
-                        <strong className="text-[#1D1A16] uppercase font-bold tracking-wider block mb-1">Requirements:</strong>
-                        {c.requirements}
-                      </div>
+
+                      {c.requirements && (
+                        <div className="rounded-xl bg-[#F8F5EF] p-3.5">
+                          <p className="text-xs font-bold uppercase tracking-wider text-[#1D1A16] mb-1">Requirements</p>
+                          <p className="text-xs text-[#6B6257] leading-relaxed">{c.requirements}</p>
+                        </div>
+                      )}
+
                       {c.agency && (
-                        <p className="text-[10px] text-[#C8A96A] font-bold uppercase tracking-widest">{c.agency.name}</p>
+                        <p className="text-xs text-[#C8A96A] font-bold uppercase tracking-widest">{c.agency.name}</p>
                       )}
                     </div>
-                    <div className="border-t border-[#E7DED1]/60 pt-4 mt-6 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-[#C8A96A]" />
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#6B6257]">
-                          {new Date(c.date).toLocaleDateString()}
+
+                    <div className="border-t border-[#E7DED1]/60 pt-4 mt-5 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5 text-[#C8A96A]" />
+                        <span className="text-xs text-[#6B6257]">
+                          {new Date(c.date).toLocaleDateString("en-RW", { day: "numeric", month: "short", year: "numeric" })}
                         </span>
                       </div>
                       <button
                         onClick={() => { setSelectedId(c.id); setApplyError(null); setApplySuccess(false); }}
                         disabled={alreadyApplied}
-                        className={`rounded-full px-5 py-2 text-[10px] font-bold uppercase tracking-widest transition-all ${alreadyApplied ? "bg-[#E7DED1] text-[#6B6257] cursor-not-allowed" : "bg-[#1D1A16] text-white hover:bg-[#C8A96A]"}`}>
-                        {alreadyApplied ? "Applied" : "Apply Now"}
+                        className={`rounded-full px-5 py-2 text-xs font-bold uppercase tracking-widest transition-all ${
+                          alreadyApplied
+                            ? "bg-[#E7DED1] text-[#6B6257] cursor-not-allowed"
+                            : "bg-[#1D1A16] text-white hover:bg-[#C8A96A] hover:text-[#11100E]"
+                        }`}
+                      >
+                        {alreadyApplied ? "Applied ✓" : "Apply Now"}
                       </button>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
-            </div>
+            </motion.div>
           )}
         </div>
       </main>
 
       {/* Apply Modal */}
       {selectedId && activeCasting && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-[#F8F5EF] rounded-2xl border border-[#E7DED1] p-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#E7DED1]/70 pb-3 mb-4">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 28 }}
+            className="w-full max-w-md bg-white rounded-2xl border border-[#E7DED1] p-6 shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-[#E7DED1]/70 pb-4 mb-5">
               <h3 className="font-serif text-xl font-bold text-[#1D1A16] uppercase">Apply to Casting</h3>
-              <button onClick={() => setSelectedId(null)} className="text-[#6B6257] hover:text-[#1D1A16]">
+              <button onClick={() => setSelectedId(null)} className="rounded-xl p-1.5 hover:bg-[#F8F5EF] text-[#6B6257] hover:text-[#1D1A16] transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {applySuccess ? (
-              <div className="py-8 text-center space-y-3">
-                <div className="mx-auto rounded-full bg-emerald-100 p-3 text-emerald-600 w-fit">
-                  <CheckCircle className="h-8 w-8" />
+              <div className="py-10 text-center space-y-4">
+                <div className="mx-auto rounded-full bg-emerald-100 p-4 text-emerald-600 w-fit">
+                  <CheckCircle className="h-9 w-9" />
                 </div>
-                <h4 className="font-serif text-base font-bold uppercase text-[#1D1A16]">Application Submitted!</h4>
-                <p className="text-xs text-[#6B6257] uppercase tracking-wider">Your portfolio has been submitted for review.</p>
+                <h4 className="font-serif text-lg font-bold uppercase text-[#1D1A16]">Application Submitted!</h4>
+                <p className="text-sm text-[#6B6257]">Your portfolio has been submitted for review.</p>
               </div>
             ) : (
-              <form onSubmit={handleApply} className="space-y-4">
+              <form onSubmit={handleApply} className="space-y-5">
                 <div className="space-y-1">
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257]">Casting</span>
-                  <p className="text-xs font-bold text-[#1D1A16] uppercase">{activeCasting.title}</p>
-                  <p className="text-[10px] text-[#6B6257]">{activeCasting.location} · ${activeCasting.budget.toLocaleString()}</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#6B6257]">Casting</p>
+                  <p className="text-sm font-bold text-[#1D1A16]">{activeCasting.title}</p>
+                  <p className="text-xs text-[#6B6257]">{activeCasting.location} · {activeCasting.budget.toLocaleString()} RWF</p>
                 </div>
 
                 {applyError && (
-                  <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-red-600 text-xs flex items-center gap-2">
+                  <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-red-600 text-sm flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 shrink-0" /> {applyError}
                   </div>
                 )}
 
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Cover Note</label>
-                  <textarea rows={4} value={coverNote} onChange={(e) => setCoverNote(e.target.value)}
-                    placeholder="Tell the casting director about your experience and why you fit this casting..."
-                    className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none resize-none" />
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-widest text-[#6B6257] block">Cover Note</label>
+                  <textarea
+                    rows={4}
+                    value={coverNote}
+                    onChange={(e) => setCoverNote(e.target.value)}
+                    placeholder="Tell the casting director about your experience and why you're a great fit..."
+                    className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF] p-3.5 text-sm focus:outline-none focus:border-[#C8A96A] focus:bg-white resize-none transition-colors"
+                  />
                 </div>
 
-                <div className="flex gap-3 justify-end pt-2">
-                  <button type="button" onClick={() => setSelectedId(null)}
-                    className="rounded-full border border-[#E7DED1] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-[#6B6257] hover:bg-white">
+                <div className="flex gap-3 justify-end pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(null)}
+                    className="rounded-full border border-[#E7DED1] px-5 py-2.5 text-sm font-bold uppercase tracking-widest text-[#6B6257] hover:bg-[#F8F5EF] transition-colors"
+                  >
                     Cancel
                   </button>
-                  <button type="submit" disabled={applying}
-                    className="rounded-full bg-[#1D1A16] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] disabled:opacity-60 flex items-center gap-1.5">
-                    {applying && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  <button
+                    type="submit"
+                    disabled={applying}
+                    className="rounded-full bg-[#1D1A16] px-5 py-2.5 text-sm font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] hover:text-[#11100E] disabled:opacity-60 flex items-center gap-2 transition-colors"
+                  >
+                    {applying && <Loader2 className="h-4 w-4 animate-spin" />}
                     Submit Application
                   </button>
                 </div>
               </form>
             )}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
 
       <Footer />
