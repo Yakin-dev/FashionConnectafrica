@@ -17,13 +17,17 @@ export default function NotificationPermission() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator)) {
-      setState("unsupported"); return;
-    }
-    const p = Notification.permission;
-    if (p === "granted") setState("granted");
-    else if (p === "denied") setState("denied");
-    else setState("prompt");
+    const checkPermission = () => {
+      if (typeof window === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator)) {
+        setState("unsupported"); return;
+      }
+      const p = Notification.permission;
+      if (p === "granted") setState("granted");
+      else if (p === "denied") setState("denied");
+      else setState("prompt");
+    };
+    const timer = setTimeout(checkPermission, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleEnable = async () => {

@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
@@ -43,7 +45,28 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function ModelDashboard() {
-  const fallback = mockModels[0];
+  const fallback = mockModels[0] ?? {
+    id: "fallback",
+    name: "Model",
+    agencyName: "",
+    avatarUrl: "",
+    gender: "Female",
+    category: "Runway",
+    height: 175,
+    waist: 60,
+    hips: 90,
+    shoeSize: 39,
+    location: "Kigali, Rwanda",
+    isVerified: false,
+    profileCompletion: 0,
+    viewsCount: 0,
+    experienceYears: 0,
+    bio: "",
+    portfolioImages: [],
+    portfolioVideos: [],
+    reviews: [],
+    experienceTimeline: []
+  };
 
   const [dbModel, setDbModel]             = useState<DBModel | null>(null);
   const [notifications, setNotifications] = useState<DBNotification[]>([]);

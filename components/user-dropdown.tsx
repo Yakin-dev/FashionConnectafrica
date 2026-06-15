@@ -50,7 +50,7 @@ export function UserDropdown() {
   const name = user.name ?? "User"
   const email = user.email ?? ""
   const role = user.role ?? "MODEL"
-  const avatar = user.avatarUrl ?? null
+  const avatar = user.avatarUrl ?? undefined
   const initials = name
     .split(" ")
     .map((n: string) => n[0])
