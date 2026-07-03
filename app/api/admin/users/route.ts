@@ -1,13 +1,13 @@
-import { auth } from "@/auth"
+import { getCurrentUser } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
 export async function GET() {
   try {
-    const session = await auth()
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const currentUser = await getCurrentUser()
+    if (!currentUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const admin = await prisma.user.findUnique({ where: { id: session.user.id } })
+    const admin = await prisma.user.findUnique({ where: { id: currentUser.id } })
     if (!admin || admin.role !== "ADMIN") {
       return NextResponse.json({ error: "Admin only" }, { status: 403 })
     }

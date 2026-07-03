@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { getCurrentUser } from "@/lib/auth"
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
@@ -13,8 +13,8 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth().catch(() => null)
-    const dbUserId = session?.user?.id ?? null
+    const currentUser = await getCurrentUser()
+    const dbUserId = currentUser?.id ?? null
 
     const body = await req.json()
     const data = schema.parse(body)
@@ -35,10 +35,10 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   try {
-    const session = await auth()
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const currentUser = await getCurrentUser()
+    if (!currentUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const user = await prisma.user.findUnique({ where: { id: session.user.id } })
+    const user = await prisma.user.findUnique({ where: { id: currentUser.id } })
     if (!user || user.role !== "ADMIN") {
       return NextResponse.json({ error: "Admin only" }, { status: 403 })
     }

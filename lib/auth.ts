@@ -1,27 +1,16 @@
-import { auth } from "@/auth"
-import { prisma } from "@/lib/prisma"
+import { getSessionUser as getCurrentUser, getCurrentAppUser } from "@/lib/session"
 
 /**
  * Returns the full Prisma User record for the currently authenticated user,
  * or null if unauthenticated.
+ *
+ * This is the primary auth function — use it in API routes and server components.
+ * Replaces the old `auth()` from NextAuth.
  */
-export async function getCurrentUser() {
-  try {
-    const session = await auth()
-    if (!session?.user?.id) return null
-
-    return prisma.user.findUnique({
-      where: { id: session.user.id },
-    })
-  } catch {
-    return null
-  }
-}
+export { getCurrentUser }
 
 /**
- * Returns the session user object (lightweight — from JWT, no DB round-trip).
+ * Re-exported for convenience with the most common name.
+ * Both `getCurrentUser` and `getCurrentAppUser` do the same thing.
  */
-export async function getSessionUser() {
-  const session = await auth()
-  return session?.user ?? null
-}
+export { getCurrentAppUser }

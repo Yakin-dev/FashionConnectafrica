@@ -84,6 +84,21 @@ model User {
   pushSubscriptions   PushSubscription[]
   contactMessages     ContactMessage[]
   marketplaceProvider MarketplaceProvider?
+  sessions Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // OAuth account links (Google, etc.) — required by @auth/prisma-adapter

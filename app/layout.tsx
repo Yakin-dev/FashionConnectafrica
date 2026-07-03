@@ -17,14 +17,14 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "ModelConnect.Africa | Premium Fashion & Modelling Talent Network",
+  title: "FashionConnect.Africa | Premium Fashion & Modelling Talent Network",
   description:
     "Connecting Africa's elite models, top agencies, clients, casting panels, and fashion creatives to global opportunities.",
   openGraph: {
-    title: "ModelConnect.Africa | Connecting Fashion Talent",
+    title: "FashionConnect.Africa | Connecting Fashion Talent",
     description:
       "Build portfolios, apply for international casting, book premium creatives, and manage modeling activities in one elegant workspace.",
-    url: "https://modelconnect.africa",
+    url: "https://fashionconnect.africa",
     type: "website",
   },
 }

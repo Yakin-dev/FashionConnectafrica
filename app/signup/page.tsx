@@ -3,24 +3,24 @@
 import { useState, Suspense } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { signIn } from "next-auth/react"
 import { Sparkles, Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
-import { GoogleSignInButton } from "@/components/google-sign-in-button"
+import { useAuth } from "@/lib/auth-context"
 
 function PasswordStrength({ password }: { password: string }) {
   const checks = [
     { label: "At least 8 characters", ok: password.length >= 8 },
     { label: "One uppercase letter", ok: /[A-Z]/.test(password) },
+    { label: "One lowercase letter", ok: /[a-z]/.test(password) },
     { label: "One number", ok: /[0-9]/.test(password) },
   ]
   const score = checks.filter((c) => c.ok).length
-  const color = score === 0 ? "" : score === 1 ? "bg-red-400" : score === 2 ? "bg-yellow-400" : "bg-green-400"
+  const color = score === 0 ? "" : score <= 1 ? "bg-red-400" : score <= 2 ? "bg-yellow-400" : score === 3 ? "bg-blue-400" : "bg-green-400"
 
   if (!password) return null
   return (
     <div className="mt-2 space-y-1.5">
       <div className="flex gap-1">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3, 4].map((i) => (
           <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i <= score ? color : "bg-[#E7DED1]"}`} />
         ))}
       </div>
@@ -38,6 +38,7 @@ function PasswordStrength({ password }: { password: string }) {
 
 function SignupForm() {
   const router = useRouter()
+  const { refreshUser } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -55,32 +56,29 @@ function SignupForm() {
     const pwd = form.get("password") as string
     const name = `${firstName} ${lastName}`.trim() || firstName
 
-    const res = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password: pwd, name, firstName, lastName }),
-    })
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: pwd, name, firstName, lastName }),
+      })
 
-    const data = await res.json()
-    if (!res.ok) {
-      setError(data.error ?? "Registration failed")
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error ?? "Registration failed")
+        setLoading(false)
+        return
+      }
+
+      // Refresh auth context — session cookie was set by the server
+      await refreshUser()
+
+      router.push("/onboarding")
+    } catch {
+      setError("Registration failed. Please try again.")
       setLoading(false)
-      return
     }
-
-    const result = await signIn("credentials", {
-      email,
-      password: pwd,
-      redirect: false,
-    })
-
-    if (result?.error) {
-      setError("Account created but sign-in failed. Please go to login.")
-      setLoading(false)
-      return
-    }
-
-    router.push("/onboarding")
   }
 
   return (
@@ -90,7 +88,7 @@ function SignupForm() {
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-1.5 font-serif text-xl font-bold tracking-wider uppercase text-[#1D1A16]">
             <Sparkles className="h-5 w-5 text-[#C8A96A]" />
-            <span>ModelConnect</span>
+            <span>FashionConnect</span>
             <span className="text-[#C8A96A]">.Africa</span>
           </Link>
           <p className="mt-2 text-[10px] text-[#6B6257] uppercase tracking-widest">Create your account</p>
@@ -103,16 +101,6 @@ function SignupForm() {
               <span>{error}</span>
             </div>
           )}
-
-          {/* Google sign-up */}
-          <GoogleSignInButton />
-
-          {/* Divider */}
-          <div className="my-6 flex items-center gap-3">
-            <div className="flex-1 h-px bg-[#E7DED1]" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#9B9189]">or sign up with email</span>
-            <div className="flex-1 h-px bg-[#E7DED1]" />
-          </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-2 gap-3">

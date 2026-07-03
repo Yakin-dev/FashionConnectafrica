@@ -18,7 +18,7 @@ export default function TermsPage() {
               Booking Contracts
             </h3>
             <p>
-              ModelConnect.Africa operates exclusively as a directory and workspace platform. Actual booking finances, contract completions, and runway agreements remain the sole responsibility of the agencies, models, and clients.
+              FashionConnect.Africa operates exclusively as a directory and workspace platform. Actual booking finances, contract completions, and runway agreements remain the sole responsibility of the agencies, models, and clients.
             </p>
 
             <h3 className="font-serif text-[#1D1A16] font-bold text-lg uppercase border-b border-[#E7DED1]/70 pb-2">

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
+
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
@@ -11,28 +11,22 @@ import { Sparkles, ArrowRight, ShieldCheck, Award, Briefcase, Camera, Users, Tre
 
 const HERO_SLIDES = [
   {
-    image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1920&q=80",
-    tag: "Kigali Fashion Week",
-    headline: ["Africa's", "Premier", "Runway Platform"],
-    sub: "Connecting Kigali's elite models with the world's leading creative directors.",
+    image: "https://media.giphy.com/media/dBIXZZwg7m8iiPxOQc/giphy.gif",
+    tag: "Avant-Garde Runway",
+    headline: ["Bold", "Editorial", "Fashion"],
+    sub: "High-fashion meets raw creativity — pushing boundaries on the world's most iconic runways.",
   },
   {
-    image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=1920&q=80",
-    tag: "Editorial & Catwalk",
-    headline: ["Build Your", "Editorial", "Portfolio"],
-    sub: "Showcase high-resolution showcards, stats, and catwalk reels in one elegant workspace.",
+    image: "https://media.giphy.com/media/26ufiOFG3EIVrUl7G/giphy.gif",
+    tag: "NY Fashion Week",
+    headline: ["Where Style", "Meets The", "Runway"],
+    sub: "Striking collections and unforgettable moments from the international fashion calendar.",
   },
   {
-    image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1920&q=80",
-    tag: "Direct Bookings",
-    headline: ["Get Discovered", "By Global", "Luxury Brands"],
-    sub: "Agencies and international casting directors browse live, verified talent from Kigali.",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1920&q=80",
-    tag: "Runway Ready",
-    headline: ["Manage Every", "Casting", "Seamlessly"],
-    sub: "Post castings, track applications, and manage bookings — all in one place.",
+    image: "https://media.giphy.com/media/xBpOGwU8X8OZSd43Vm/giphy.gif",
+    tag: "Fashion Forward",
+    headline: ["Discover", "Africa's", "Next Icons"],
+    sub: "Connecting Kigali's finest models and creative talent with global fashion opportunities.",
   },
 ];
 
@@ -121,13 +115,10 @@ export default function LandingPage() {
             transition={{ duration: 1.2, ease: "easeInOut" }}
             className="absolute inset-0"
           >
-            <Image
-              src={slide.image ?? ""}
+            <img
+              src={slide.image}
               alt={slide.tag}
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover object-top"
+              className="absolute inset-0 w-full h-full object-cover object-top"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#0C0A08]/95 via-[#0C0A08]/50 to-[#0C0A08]/20" />
           </motion.div>
@@ -394,9 +385,8 @@ export default function LandingPage() {
         transition={{ duration: 0.8 }}
         className="bg-[#11100E] py-20 lg:py-28 text-white text-center"
       >
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 space-y-6">
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#C8A96A]">
-            <Sparkles className="h-4 w-4" /> ModelConnect.Africa
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 space-y-6">            <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#C8A96A]">
+          <Sparkles className="h-4 w-4" /> FashionConnect.Africa
           </span>
           <h2 className="font-serif text-4xl sm:text-5xl font-bold uppercase leading-tight">
             Kigali&apos;s Fashion<br />

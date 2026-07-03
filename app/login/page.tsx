@@ -3,9 +3,8 @@
 import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { signIn } from "next-auth/react"
 import { Sparkles, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react"
-import { GoogleSignInButton } from "@/components/google-sign-in-button"
+import { useAuth } from "@/lib/auth-context"
 
 const ROLE_DASHBOARD: Record<string, string> = {
   MODEL: "/dashboard/model",
@@ -19,6 +18,7 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") ?? ""
+  const { refreshUser } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -32,34 +32,39 @@ function LoginForm() {
     const email = form.get("email") as string
     const password = form.get("password") as string
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    })
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
 
-    if (result?.error) {
-      setError("Invalid email or password. Please try again.")
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error ?? "Invalid email or password.")
+        setLoading(false)
+        return
+      }
+
+      await refreshUser()
+
+      if (callbackUrl && callbackUrl.startsWith("/")) {
+        router.push(callbackUrl)
+        return
+      }
+
+      if (!data.user?.onboardingCompleted) {
+        router.push("/onboarding")
+        return
+      }
+
+      const dest = ROLE_DASHBOARD[data.user?.role ?? "MODEL"] ?? "/"
+      router.push(dest)
+    } catch {
+      setError("Invalid email or password.")
       setLoading(false)
-      return
     }
-
-    const sessionRes = await fetch("/api/auth/session")
-    const session = await sessionRes.json()
-    const user = session?.user as any
-
-    if (callbackUrl && callbackUrl.startsWith("/")) {
-      router.push(callbackUrl)
-      return
-    }
-
-    if (!user?.onboardingCompleted) {
-      router.push("/onboarding")
-      return
-    }
-
-    const dest = ROLE_DASHBOARD[user?.role ?? "MODEL"] ?? "/"
-    router.push(dest)
   }
 
   return (
@@ -69,7 +74,7 @@ function LoginForm() {
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-1.5 font-serif text-xl font-bold tracking-wider uppercase text-[#1D1A16]">
             <Sparkles className="h-5 w-5 text-[#C8A96A]" />
-            <span>ModelConnect</span>
+            <span>FashionConnect</span>
             <span className="text-[#C8A96A]">.Africa</span>
           </Link>
           <p className="mt-2 text-[10px] text-[#6B6257] uppercase tracking-widest">Welcome back</p>
@@ -82,16 +87,6 @@ function LoginForm() {
               <span>{error}</span>
             </div>
           )}
-
-          {/* Google sign-in */}
-          <GoogleSignInButton callbackUrl={callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/auth/redirect"} />
-
-          {/* Divider */}
-          <div className="my-6 flex items-center gap-3">
-            <div className="flex-1 h-px bg-[#E7DED1]" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#9B9189]">or</span>
-            <div className="flex-1 h-px bg-[#E7DED1]" />
-          </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">

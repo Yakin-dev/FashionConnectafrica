@@ -61,6 +61,7 @@ export default function AgencyDashboard() {
 
   // Add model form
   const [modelName, setModelName]         = useState("");
+  const [modelEmail, setModelEmail]       = useState("");
   const [modelCategory, setModelCategory] = useState("Runway");
   const [modelHeight, setModelHeight]     = useState(175);
   const [modelGender, setModelGender]     = useState("Female");
@@ -111,11 +112,11 @@ export default function AgencyDashboard() {
       const res = await fetch("/api/models", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: modelName, category: modelCategory, height: Number(modelHeight), gender: modelGender }),
+        body: JSON.stringify({ name: modelName, email: modelEmail || undefined, category: modelCategory, height: Number(modelHeight), gender: modelGender }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? "Failed"); }
       setAddSuccess(true);
-      setModelName(""); setModelHeight(175); setModelCategory("Runway"); setModelGender("Female");
+      setModelName(""); setModelEmail(""); setModelHeight(175); setModelCategory("Runway"); setModelGender("Female");
       fetchData();
       setTimeout(() => setAddSuccess(false), 3000);
     } catch (err) {
@@ -258,6 +259,7 @@ export default function AgencyDashboard() {
                   <form onSubmit={handleAddModel} className="space-y-4">
                     {[
                       { label: "Model Name", value: modelName, setter: setModelName, type: "text", placeholder: "ENTER NAME" },
+                      { label: "Email (optional)", value: modelEmail, setter: setModelEmail, type: "email", placeholder: "model@example.com" },
                       { label: "Height (cm)", value: modelHeight, setter: (v: string) => setModelHeight(Number(v)), type: "number", placeholder: "175" },
                     ].map(({ label, value, setter, type, placeholder }) => (
                       <div key={label} className="space-y-1">

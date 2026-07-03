@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth-context";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, ArrowRight, ArrowLeft, CheckCircle2,
@@ -12,12 +12,6 @@ import {
 } from "lucide-react";
 
 const ROLES = [
-  {
-    id: "model",
-    title: "Fashion Model",
-    desc: "I'm a model looking for castings and opportunities",
-    icon: User,
-  },
   {
     id: "photographer",
     title: "Photographer",
@@ -63,7 +57,7 @@ const labelClass = "block text-xs font-bold uppercase tracking-widest text-[#6B6
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { update } = useSession();
+  const { refreshUser } = useAuth();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -90,7 +84,7 @@ export default function OnboardingPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to save");
-      await update();
+      await refreshUser();
       router.push(data.redirectUrl);
     } catch (err: any) {
       setError(err.message);
@@ -119,7 +113,7 @@ export default function OnboardingPage() {
           <div className="flex items-center justify-center gap-2 mb-8">
             <Sparkles className="h-5 w-5 text-[#C8A96A]" />
             <span className="font-serif text-lg font-bold uppercase tracking-widest text-[#1D1A16]">
-              ModelConnect<span className="text-[#C8A96A]">.Africa</span>
+              FashionConnect<span className="text-[#C8A96A]">.Africa</span>
             </span>
           </div>
 
@@ -205,33 +199,6 @@ export default function OnboardingPage() {
                 <p className="text-sm text-[#6B6257] text-center mb-7">This helps us set up your dashboard correctly.</p>
 
                 <div className="space-y-4">
-
-                  {/* Fashion Model */}
-                  {purpose === "model" && (
-                    <>
-                      <div>
-                        <label className={labelClass}>Are you represented by an agency?</label>
-                        <select className={inputClass} value={intentData.representation || ""} onChange={set("representation")}>
-                          <option value="" disabled>Select option</option>
-                          <option value="independent">No — I am an independent model</option>
-                          <option value="agency">Yes — I am represented by an agency</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className={labelClass}>Modeling Category</label>
-                        <select className={inputClass} value={intentData.category || ""} onChange={set("category")}>
-                          <option value="" disabled>Select your main category</option>
-                          <option value="Runway">Runway</option>
-                          <option value="Editorial">Editorial</option>
-                          <option value="Commercial">Commercial</option>
-                          <option value="Beauty">Beauty</option>
-                          <option value="Fitness">Fitness</option>
-                          <option value="Plus-size">Plus-size</option>
-                          <option value="Petite">Petite</option>
-                        </select>
-                      </div>
-                    </>
-                  )}
 
                   {/* Photographer */}
                   {purpose === "photographer" && (

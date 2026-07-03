@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { useSession, signOut } from "next-auth/react"
+import { useAuth } from "@/lib/auth-context"
 import Link from "next/link"
 import Image from "next/image"
 import {
@@ -32,7 +32,7 @@ const ROLE_LABEL: Record<string, string> = {
 }
 
 export function UserDropdown() {
-  const { data: session } = useSession()
+  const { user, signOut } = useAuth()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -44,9 +44,8 @@ export function UserDropdown() {
     return () => document.removeEventListener("mousedown", onOutside)
   }, [])
 
-  if (!session?.user) return null
+  if (!user) return null
 
-  const user = session.user as any
   const name = user.name ?? "User"
   const email = user.email ?? ""
   const role = user.role ?? "MODEL"
@@ -62,7 +61,7 @@ export function UserDropdown() {
 
   async function handleSignOut() {
     setOpen(false)
-    await signOut({ callbackUrl: "/" })
+    await signOut()
   }
 
   return (

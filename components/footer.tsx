@@ -14,7 +14,7 @@ export default function Footer() {
           <div className="lg:col-span-2 space-y-6">
             <Link href="/" className="flex items-center gap-1.5 font-serif text-xl font-bold tracking-wider uppercase text-white">
               <Sparkles className="h-5 w-5 text-[#C8A96A]" />
-              <span>ModelConnect</span>
+              <span>FashionConnect</span>
               <span className="text-[#C8A96A]">.Africa</span>
             </Link>
             <p className="text-xs text-[#6B6257] leading-relaxed max-w-sm">
@@ -98,7 +98,7 @@ export default function Footer() {
         {/* Footer Bottom */}
         <div className="border-t border-[#6B6257]/10 mt-16 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[10px] tracking-widest text-[#6B6257] uppercase">
-            &copy; {currentYear} ModelConnect.Africa. All rights reserved.
+            &copy; {currentYear} FashionConnect.Africa. All rights reserved.
           </p>
           <p className="text-[10px] tracking-widest text-[#6B6257] uppercase flex items-center gap-1.5">
             Designed for <span className="text-white font-semibold">Africa&apos;s Creative Future</span>

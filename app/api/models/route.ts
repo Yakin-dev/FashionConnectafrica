@@ -1,10 +1,11 @@
-import { auth } from "@/auth"
+import { getCurrentUser } from "@/lib/auth"
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 
 const createSchema = z.object({
   name: z.string().min(2),
+  email: z.string().email().optional(),
   gender: z.string().default("Female"),
   category: z.string().default("Runway"),
   height: z.number().min(100).max(250),
@@ -42,11 +43,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const currentUser = await getCurrentUser()
+    if (!currentUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const poster = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: currentUser.id },
       include: { agency: true },
     })
 
@@ -56,9 +57,20 @@ export async function POST(req: NextRequest) {
     const data = createSchema.parse(body)
 
     if (poster.role === "AGENCY" && poster.agency) {
+      // Use provided email or generate an internal placeholder
+      const modelEmail = data.email || `model-${Date.now()}@${poster.agency.name.toLowerCase().replace(/\s+/g, "")}.fashionconnect.internal`;
+
+      // Check if email is already in use (only if provided)
+      if (data.email) {
+        const existingUser = await prisma.user.findUnique({ where: { email: modelEmail } });
+        if (existingUser) {
+          return NextResponse.json({ error: "A user with this email already exists" }, { status: 409 });
+        }
+      }
+
       const modelUser = await prisma.user.create({
         data: {
-          email: `model-${Date.now()}@${poster.agency.name.toLowerCase().replace(/\s+/g, "")}.modelconnect.internal`,
+          email: modelEmail,
           name: data.name,
           role: "MODEL",
           status: "ACTIVE",

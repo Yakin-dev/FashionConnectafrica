@@ -8,7 +8,7 @@ import Footer from "@/components/footer";
 import ReviewStars from "@/components/review-stars";
 import EmptyState from "@/components/empty-state";
 import { mockModels } from "@/lib/mock-data";
-import { MapPin, Sparkles, Award, CheckCircle, Video, Image as ImageIcon, Loader2, X } from "lucide-react";
+import { MapPin, Sparkles, Award, CheckCircle, Video, Image as ImageIcon, Loader2, X, Copy, Check } from "lucide-react";
 import Link from "next/link";
 
 interface DBModel {
@@ -40,7 +40,16 @@ export default function ModelProfilePage({ params }: { params: Promise<{ id: str
   const [dbModel, setDbModel]           = useState<DBModel | null>(null);
   const [loading, setLoading]           = useState(true);
   const [activeTab, setActiveTab]       = useState<"photos" | "videos">("photos");
+  const [copied, setCopied] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
+
+  const copyProfileLink = () => {
+    const url = `${window.location.origin}/models/${id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  };
   const [bookingDate, setBookingDate]   = useState("");
   const [bookingNotes, setBookingNotes] = useState("");
   const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -188,10 +197,22 @@ export default function ModelProfilePage({ params }: { params: Promise<{ id: str
                 </div>
               </div>
 
-              <button onClick={() => setShowBookingModal(true)}
-                className="rounded-full bg-[#1D1A16] px-8 py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-all shadow-md">
-                Inquire & Book Model
-              </button>
+              <div className="flex flex-wrap items-center gap-3">
+                <button onClick={() => setShowBookingModal(true)}
+                  className="rounded-full bg-[#1D1A16] px-8 py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-all shadow-md">
+                  Inquire & Book Model
+                </button>
+                <button
+                  onClick={copyProfileLink}
+                  className={`rounded-full border border-[#E7DED1] px-6 py-4 text-xs font-bold uppercase tracking-widest transition-all ${copied ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'text-[#6B6257] hover:bg-white hover:text-[#1D1A16]'}`}
+                >
+                  {copied ? (
+                    <span className="flex items-center gap-2"><Check className="h-4 w-4" /> Link Copied!</span>
+                  ) : (
+                    <span className="flex items-center gap-2"><Copy className="h-4 w-4" /> Share Profile</span>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 

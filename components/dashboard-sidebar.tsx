@@ -57,7 +57,7 @@ export default function DashboardSidebar({ title, subtitle, items, role }: Dashb
         <div className="border-b border-[#E7DED1]/60 pb-5">
           <div className="flex items-center gap-1.5 font-serif text-sm font-bold tracking-widest uppercase text-[#1D1A16]">
             <Sparkles className="h-4 w-4 text-[#C8A96A]" />
-            <span>ModelConnect</span>
+            <span>FashionConnect</span>
           </div>
           <p className="text-[10px] font-bold text-[#C8A96A] tracking-widest uppercase mt-1">
             {role} PANEL
@@ -108,7 +108,7 @@ export default function DashboardSidebar({ title, subtitle, items, role }: Dashb
                 <div>
                   <div className="flex items-center gap-1.5 font-serif text-sm font-bold tracking-widest uppercase text-[#1D1A16]">
                     <Sparkles className="h-4 w-4 text-[#C8A96A]" />
-                    <span>ModelConnect</span>
+                    <span>FashionConnect</span>
                   </div>
                   <p className="text-[10px] font-bold text-[#C8A96A] tracking-widest uppercase mt-0.5">{role} PANEL</p>
                   <p className="text-sm font-bold font-serif text-[#1D1A16] mt-2">{title}</p>

@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { getCurrentUser } from "@/lib/auth"
 import { NextRequest, NextResponse } from "next/server"
 import { uploadToCloudinary } from "@/lib/cloudinary-server"
 
@@ -9,8 +9,8 @@ const MAX_VIDEO_SIZE = 50 * 1024 * 1024
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
+    const user = await getCurrentUser()
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

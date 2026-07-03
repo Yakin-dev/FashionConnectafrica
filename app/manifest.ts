@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "ModelConnect.Africa",
-    short_name: "ModelConnect",
+    name: "FashionConnect.Africa",
+    short_name: "FashionConnect",
     description: "Africa's premium fashion & modelling talent network",
     start_url: "/",
     display: "standalone",

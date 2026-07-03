@@ -5,15 +5,15 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Menu, X, Bell, User, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useSession } from "next-auth/react"
+import { useAuth } from "@/lib/auth-context"
 import { UserDropdown } from "@/components/user-dropdown"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const pathname = usePathname()
-  const { data: session, status } = useSession()
-  const isSignedIn = status === "authenticated"
+  const { user, isLoading } = useAuth()
+  const isSignedIn = !!user
   const [unreadCount, setUnreadCount] = useState(0)
   const [recentNotifs, setRecentNotifs] = useState<
     Array<{ id: string; title: string; message: string; createdAt: string }>
@@ -55,7 +55,7 @@ export default function Navbar() {
           { id: "2", title: "Welcome!", body: "Create an account to start receiving opportunities.", time: "Just now" },
         ]
 
-  const role = (session?.user as any)?.role ?? "MODEL"
+  const role = user?.role ?? "MODEL"
   const ROLE_DASHBOARD: Record<string, string> = {
     MODEL: "/dashboard/model",
     AGENCY: "/dashboard/agency",
@@ -76,7 +76,7 @@ export default function Navbar() {
               className="group flex items-center gap-1.5 font-serif text-xl font-bold tracking-wider uppercase text-[#1D1A16]"
             >
               <Sparkles className="h-5 w-5 text-[#C8A96A] transition-transform duration-500 group-hover:rotate-45" />
-              <span>ModelConnect</span>
+              <span>FashionConnect</span>
               <span className="text-[#C8A96A]">.Africa</span>
             </Link>
           </div>
@@ -150,7 +150,7 @@ export default function Navbar() {
               )}
             </div>
 
-            {isSignedIn ? (
+            {!isLoading && isSignedIn ? (
               <>
                 <Link
                   href={dashboardHref}
@@ -224,7 +224,7 @@ export default function Navbar() {
               )
             })}
             <div className="mt-4 border-t border-[#E7DED1]/60 pt-4 flex flex-col gap-3">
-              {isSignedIn ? (
+              {!isLoading && isSignedIn ? (
                 <div className="flex items-center justify-between px-2">
                   <Link
                     href={dashboardHref}

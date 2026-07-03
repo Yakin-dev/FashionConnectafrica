@@ -112,7 +112,7 @@ export default function CastingDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const postedBy = casting.agency?.name ?? casting.client?.user?.name ?? "ModelConnect.Africa";
+  const postedBy = casting.agency?.name ?? casting.client?.user?.name ?? "FashionConnect.Africa";
 
   return (
     <>

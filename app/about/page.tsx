@@ -53,7 +53,7 @@ export default function AboutPage() {
                 <Sparkles className="h-3.5 w-3.5" /> Our Narrative
               </span>
               <h1 className="font-serif text-4xl sm:text-5xl font-bold uppercase leading-tight">
-                About ModelConnect<span className="text-[#C8A96A]">.Africa</span>
+                About FashionConnect<span className="text-[#C8A96A]">.Africa</span>
               </h1>
               <p className="text-base text-white/60 leading-relaxed max-w-xl mx-auto">
                 Rwanda&apos;s first dedicated platform for models, agencies, and fashion creatives.
@@ -73,7 +73,7 @@ export default function AboutPage() {
               className="bg-white rounded-2xl border border-[#E7DED1] p-8 sm:p-12 text-center"
             >
               <p className="font-serif text-xl sm:text-2xl italic text-[#1D1A16] leading-relaxed">
-                &quot;We believe Rwanda&apos;s creative talent belongs on the world stage. ModelConnect.Africa is the bridge that turns digital portfolios into real opportunities.&quot;
+                &quot;We believe Rwanda&apos;s creative talent belongs on the world stage. FashionConnect.Africa is the bridge that turns digital portfolios into real opportunities.&quot;
               </p>
             </motion.div>
 
@@ -85,7 +85,7 @@ export default function AboutPage() {
               className="space-y-5 text-[#6B6257] leading-relaxed"
             >
               <p className="text-base">
-                ModelConnect.Africa was built to solve a real problem in Kigali&apos;s fashion scene: talented models, hardworking agencies, and ambitious clients with no single place to connect professionally.
+                FashionConnect.Africa was built to solve a real problem in Kigali&apos;s fashion scene: talented models, hardworking agencies, and ambitious clients with no single place to connect professionally.
               </p>
               <p className="text-base">
                 We offer a clean, easy-to-use platform where models display their portfolios with the right details, agencies manage their rosters efficiently, and clients find exactly the talent they need — all without friction.

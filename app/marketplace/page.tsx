@@ -119,7 +119,7 @@ export default function MarketplacePage() {
                 description={
                   selectedCategory !== "All"
                     ? `No ${selectedCategory.toLowerCase()} professionals have listed their services yet. Check back soon.`
-                    : "Be the first creative professional to list your services on ModelConnect Africa."
+                    : "Be the first creative professional to list your services on FashionConnect Africa."
                 }
               />
               <div className="text-center mt-6 flex flex-col sm:flex-row gap-3 justify-center">
