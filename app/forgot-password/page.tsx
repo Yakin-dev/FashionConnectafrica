@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { Sparkles, Mail, ArrowLeft } from "lucide-react"
+import { Mail, ArrowLeft } from "lucide-react"
+import Image from "next/image"
 
 export default function ForgotPasswordPage() {
   return (
@@ -7,8 +8,14 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="mb-8 text-center">
-          <Link href="/" className="inline-flex items-center gap-1.5 font-serif text-xl font-bold tracking-wider uppercase text-[#1D1A16]">
-            <Sparkles className="h-5 w-5 text-[#C8A96A]" />
+          <Link href="/" className="inline-flex items-center gap-2.5 font-serif text-xl font-bold tracking-wider uppercase text-[#1D1A16]">
+            <Image
+              src="/logo.jpeg"
+              alt="FashionConnect.Africa"
+              width={36}
+              height={36}
+              className="rounded-full object-cover ring-2 ring-[#C8A96A]/30"
+            />
             <span>FashionConnect</span>
             <span className="text-[#C8A96A]">.Africa</span>
           </Link>

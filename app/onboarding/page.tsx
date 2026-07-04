@@ -6,8 +6,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import {
-  Sparkles, ArrowRight, ArrowLeft, CheckCircle2,
+  ArrowRight, ArrowLeft, CheckCircle2,
   User, Building, Briefcase, Camera, Scissors, Video,
 } from "lucide-react";
 
@@ -110,8 +111,14 @@ export default function OnboardingPage() {
         <div className="p-8 sm:p-10">
 
           {/* Logo */}
-          <div className="flex items-center justify-center gap-2 mb-8">
-            <Sparkles className="h-5 w-5 text-[#C8A96A]" />
+          <div className="flex items-center justify-center gap-2.5 mb-8">
+            <Image
+              src="/logo.jpeg"
+              alt="FashionConnect.Africa"
+              width={32}
+              height={32}
+              className="rounded-full object-cover ring-2 ring-[#C8A96A]/30"
+            />
             <span className="font-serif text-lg font-bold uppercase tracking-widest text-[#1D1A16]">
               FashionConnect<span className="text-[#C8A96A]">.Africa</span>
             </span>

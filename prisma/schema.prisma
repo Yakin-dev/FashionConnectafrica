@@ -84,6 +84,7 @@ model User {
   pushSubscriptions   PushSubscription[]
   contactMessages     ContactMessage[]
   marketplaceProvider MarketplaceProvider?
+  subscription Subscription?
   sessions Session[]
 }
 
@@ -357,4 +358,36 @@ model MarketplaceProvider {
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+enum SubscriptionPlan {
+  MARKETPLACE_MONTHLY
+  MARKETPLACE_ANNUAL
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELED
+}
+
+model Subscription {
+  id                String             @id @default(uuid())
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan              SubscriptionPlan   @default(MARKETPLACE_MONTHLY)
+  status            SubscriptionStatus @default(EXPIRED)
+
+  flwReference      String?            @unique
+  flwTransactionId  String?
+  amount            Float
+  currency          String             @default("RWF")
+
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  canceledAt         DateTime?
+
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 }

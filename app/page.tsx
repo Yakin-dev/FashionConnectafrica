@@ -299,12 +299,12 @@ export default function LandingPage() {
             transition={{ duration: 0.6 }}
             className="text-center mb-14"
           >
-            <span className="text-xs font-bold uppercase tracking-widest text-[#C8A96A]">Platform Features</span>
+            <span className="text-xs font-bold uppercase tracking-widest text-[#C8A96A]">Premium Business Platform</span>
             <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#1D1A16] uppercase mt-3">
               Everything You Need
             </h2>
             <p className="text-sm text-[#6B6257] mt-3 max-w-xl mx-auto leading-relaxed">
-              One platform for models, agencies, clients, and creative professionals in Kigali.
+              A premium business platform for fashion professionals in Kigali. Subscribe to showcase your work and connect with opportunities.
             </p>
           </motion.div>
 
@@ -386,21 +386,21 @@ export default function LandingPage() {
         className="bg-[#11100E] py-20 lg:py-28 text-white text-center"
       >
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 space-y-6">            <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#C8A96A]">
-          <Sparkles className="h-4 w-4" /> FashionConnect.Africa
+          FashionConnect.Africa
           </span>
           <h2 className="font-serif text-4xl sm:text-5xl font-bold uppercase leading-tight">
             Kigali&apos;s Fashion<br />
-            <span className="text-[#C8A96A]">Platform Awaits You</span>
+            <span className="text-[#C8A96A]">Business Platform</span>
           </h2>
           <p className="text-base text-white/60 leading-relaxed max-w-xl mx-auto">
-            Whether you&apos;re a model starting out, an agency managing talent, or a brand looking for the right face — this is where it begins.
+            A premium platform for fashion professionals. Subscribe to showcase your work, connect with talent, and grow your business.
           </p>
           <div className="flex flex-wrap gap-4 justify-center pt-2">
             <Link
-              href="/signup"
+              href="/pricing"
               className="rounded-full bg-[#C8A96A] px-9 py-4 text-sm font-bold uppercase tracking-widest text-[#11100E] hover:bg-[#BCA062] transition-colors shadow-lg inline-flex items-center gap-2"
             >
-              Get Started Free <ArrowRight className="h-4 w-4" />
+              View Plans <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/castings"

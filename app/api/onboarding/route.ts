@@ -29,34 +29,7 @@ export async function POST(req: Request) {
       },
     })
 
-    if (role === Role.MODEL) {
-      const isIndependent = intentData.representation === "independent"
-      await prisma.model.upsert({
-        where: { userId: user.id },
-        update: {
-          category: intentData.category || "General",
-          independent: isIndependent,
-          location: intentData.location || null,
-        },
-        create: {
-          userId: user.id,
-          gender: "Not specified",
-          category: intentData.category || "General",
-          independent: isIndependent,
-          location: intentData.location || null,
-          height: 0,
-          experienceYears: 0,
-        },
-      })
-      await prisma.notification.create({
-        data: {
-          userId: user.id,
-          title: "Welcome to FashionConnect",
-          message: "Welcome to FashionConnect. Your profile is complete — start receiving opportunities.",
-          type: "SYSTEM",
-        },
-      })
-    } else if (role === Role.AGENCY) {
+    if (role === Role.AGENCY) {
       await prisma.agency.upsert({
         where: { userId: user.id },
         update: {

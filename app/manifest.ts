@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "FashionConnect.Africa",
     short_name: "FashionConnect",
-    description: "Africa's premium fashion & modelling talent network",
+    description: "Africa's premium fashion business platform — showcase your work, connect with talent, and grow your career.",
     start_url: "/",
     display: "standalone",
     background_color: "#F8F5EF",

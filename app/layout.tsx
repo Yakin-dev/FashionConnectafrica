@@ -17,13 +17,13 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "FashionConnect.Africa | Premium Fashion & Modelling Talent Network",
+  title: "FashionConnect.Africa | Premium Fashion Business Platform",
   description:
-    "Connecting Africa's elite models, top agencies, clients, casting panels, and fashion creatives to global opportunities.",
+    "Africa's premium business platform connecting fashion designers, photographers, models, agencies, and creative professionals. Subscribe to showcase your work and grow your fashion career.",
   openGraph: {
-    title: "FashionConnect.Africa | Connecting Fashion Talent",
+    title: "FashionConnect.Africa | Fashion Business Platform",
     description:
-      "Build portfolios, apply for international casting, book premium creatives, and manage modeling activities in one elegant workspace.",
+      "A premium business platform for fashion professionals. Showcase your designs, photography, and creative services. Subscribe and connect with Africa's fashion ecosystem.",
     url: "https://fashionconnect.africa",
     type: "website",
   },
@@ -35,19 +35,19 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <SessionProvider>
-      <html
-        lang="en"
-        className={cn(
-          "h-full antialiased scroll-smooth selection:bg-[#C8A96A]/20 selection:text-[#1D1A16]",
-          playfair.variable,
-          inter.variable
-        )}
-      >
-        <body className="min-h-full flex flex-col font-sans bg-[#F8F5EF] text-[#1D1A16]">
+    <html
+      lang="en"
+      className={cn(
+        "h-full antialiased scroll-smooth selection:bg-[#C8A96A]/20 selection:text-[#1D1A16]",
+        playfair.variable,
+        inter.variable
+      )}
+    >
+      <body className="min-h-full flex flex-col font-sans bg-[#F8F5EF] text-[#1D1A16]">
+        <SessionProvider>
           {children}
-        </body>
-      </html>
-    </SessionProvider>
+        </SessionProvider>
+      </body>
+    </html>
   )
 }

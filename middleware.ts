@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-const PUBLIC_PATHS = ["/", "/models", "/castings", "/marketplace", "/about", "/contact", "/privacy", "/terms", "/search"]
+const PUBLIC_PATHS = ["/", "/models", "/castings", "/marketplace", "/about", "/contact", "/privacy", "/terms", "/search", "/pricing"]
 const PUBLIC_PREFIXES = [
   "/models/",
   "/castings/",
@@ -11,6 +11,8 @@ const PUBLIC_PREFIXES = [
   "/api/castings",
   "/api/marketplace",
   "/api/contact",
+  "/api/payments",
+  "/api/webhooks",
   "/sw.js",
   "/manifest",
 ]
@@ -24,6 +26,9 @@ const ROLE_DASHBOARD: Record<string, string> = {
   ADMIN: "/dashboard/admin",
   MARKETPLACE_PROVIDER: "/marketplace",
 }
+
+// Professional roles that require an active subscription to access their dashboard
+const PROFESSIONAL_ROLES = ["MARKETPLACE_PROVIDER"]
 
 export function middleware(request: NextRequest) {
   const { nextUrl } = request
@@ -40,11 +45,10 @@ export function middleware(request: NextRequest) {
   const isAuthPath = AUTH_ONLY_PATHS.some((p) => path.startsWith(p))
   const isForgotPasswordPath = FORGOT_PASSWORD_PATHS.some((p) => path.startsWith(p))
   const isOnboarding = path.startsWith("/onboarding")
+  const isPricing = path.startsWith("/pricing")
 
   // Logged-in user visiting login, signup, or forgot-password → send to appropriate destination
   if (hasSession && (isAuthPath || isForgotPasswordPath)) {
-    // We can't access the DB here in Edge, so redirect to /onboarding
-    // The actual redirect based on onboarding/role happens client-side
     return Response.redirect(new URL("/onboarding", nextUrl))
   }
 
@@ -56,6 +60,9 @@ export function middleware(request: NextRequest) {
 
   // Allow auth-only paths (login, signup) through for unauthenticated users
   if (isAuthPath) return NextResponse.next()
+
+  // Pricing is always accessible
+  if (isPricing) return NextResponse.next()
 
   // Logged-in user can always reach onboarding
   if (isOnboarding && hasSession) return NextResponse.next()

@@ -4,7 +4,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LucideIcon, Sparkles, Menu, X } from "lucide-react";
+import { LucideIcon, Menu, X } from "lucide-react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -55,8 +56,14 @@ export default function DashboardSidebar({ title, subtitle, items, role }: Dashb
       {/* ── Desktop sidebar ────────────────────────────────────────── */}
       <aside className="hidden md:flex w-60 shrink-0 flex-col rounded-2xl border border-[#E7DED1] bg-white p-5 shadow-sm gap-6 self-start sticky top-6">
         <div className="border-b border-[#E7DED1]/60 pb-5">
-          <div className="flex items-center gap-1.5 font-serif text-sm font-bold tracking-widest uppercase text-[#1D1A16]">
-            <Sparkles className="h-4 w-4 text-[#C8A96A]" />
+          <div className="flex items-center gap-2.5 font-serif text-sm font-bold tracking-widest uppercase text-[#1D1A16]">
+            <Image
+              src="/logo.jpeg"
+              alt="FashionConnect.Africa"
+              width={24}
+              height={24}
+              className="rounded-full object-cover ring-1 ring-[#C8A96A]/30"
+            />
             <span>FashionConnect</span>
           </div>
           <p className="text-[10px] font-bold text-[#C8A96A] tracking-widest uppercase mt-1">
@@ -106,8 +113,14 @@ export default function DashboardSidebar({ title, subtitle, items, role }: Dashb
             >
               <div className="flex items-center justify-between border-b border-[#E7DED1]/60 pb-5">
                 <div>
-                  <div className="flex items-center gap-1.5 font-serif text-sm font-bold tracking-widest uppercase text-[#1D1A16]">
-                    <Sparkles className="h-4 w-4 text-[#C8A96A]" />
+                  <div className="flex items-center gap-2.5 font-serif text-sm font-bold tracking-widest uppercase text-[#1D1A16]">
+                    <Image
+                      src="/logo.jpeg"
+                      alt="FashionConnect.Africa"
+                      width={24}
+                      height={24}
+                      className="rounded-full object-cover ring-1 ring-[#C8A96A]/30"
+                    />
                     <span>FashionConnect</span>
                   </div>
                   <p className="text-[10px] font-bold text-[#C8A96A] tracking-widest uppercase mt-0.5">{role} PANEL</p>

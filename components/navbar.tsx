@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, Bell, User, Sparkles } from "lucide-react"
+import { Menu, X, Bell, User } from "lucide-react"
+import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/auth-context"
 import { UserDropdown } from "@/components/user-dropdown"
@@ -37,6 +38,7 @@ export default function Navbar() {
     { name: "Castings", href: "/castings" },
     { name: "Marketplace", href: "/marketplace" },
     { name: "About", href: "/about" },
+    { name: "Pricing", href: "/pricing" },
     { name: "Contact", href: "/contact" },
   ]
 
@@ -71,13 +73,17 @@ export default function Navbar() {
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
-            <Link
-              href="/"
-              className="group flex items-center gap-1.5 font-serif text-xl font-bold tracking-wider uppercase text-[#1D1A16]"
-            >
-              <Sparkles className="h-5 w-5 text-[#C8A96A] transition-transform duration-500 group-hover:rotate-45" />
-              <span>FashionConnect</span>
-              <span className="text-[#C8A96A]">.Africa</span>
+            <Link href="/" className="group flex items-center gap-2.5">
+              <Image
+                src="/logo.jpeg"
+                alt="FashionConnect.Africa"
+                width={36}
+                height={36}
+                className="rounded-full object-cover ring-2 ring-[#C8A96A]/30"
+              />
+              <span className="font-serif text-lg font-bold tracking-wider uppercase text-[#1D1A16]">
+                FashionConnect<span className="text-[#C8A96A]">.Africa</span>
+              </span>
             </Link>
           </div>
 
