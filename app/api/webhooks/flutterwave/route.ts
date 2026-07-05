@@ -46,7 +46,8 @@ export async function POST(request: Request) {
           const now = new Date()
           const periodEnd = new Date(now)
 
-          if (subscription.plan === "MARKETPLACE_ANNUAL") {
+          const planStr = subscription.plan as string
+          if (planStr === "PRO_ANNUAL" || planStr === "ULTIMATE_ANNUAL") {
             periodEnd.setFullYear(periodEnd.getFullYear() + 1)
           } else {
             periodEnd.setMonth(periodEnd.getMonth() + 1)

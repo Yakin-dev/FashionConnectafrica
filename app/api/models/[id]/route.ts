@@ -4,19 +4,45 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 
 const updateSchema = z.object({
+  // Identity
   gender: z.string().optional(),
   category: z.string().optional(),
+  professionalName: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  nationality: z.string().optional(),
+  languages: z.array(z.string()).optional(),
+  representationStatus: z.string().optional(),
+  travelAvailability: z.string().optional(),
+  privateContactEmail: z.string().optional(),
+  // Professional
+  categories: z.array(z.string()).optional(),
+  experienceLevel: z.string().optional(),
+  bio: z.string().optional(),
+  notableCredits: z.string().optional(),
+  skills: z.array(z.string()).optional(),
+  // Measurements
   height: z.number().optional(),
-  waist: z.number().optional(),
-  hips: z.number().optional(),
-  chest: z.number().optional(),
+  bustCm: z.number().optional(),
+  chestCm: z.number().optional(),
+  waistCm: z.number().optional(),
+  hipsCm: z.number().optional(),
+  inseamCm: z.number().optional(),
   shoeSize: z.number().optional(),
-  eyeColor: z.string().optional(),
+  shoeSizeSystem: z.string().optional(),
+  dressSize: z.string().optional(),
+  jacketSize: z.string().optional(),
+  shirtSize: z.string().optional(),
+  trouserSize: z.string().optional(),
+  topSize: z.string().optional(),
+  bottomSize: z.string().optional(),
   hairColor: z.string().optional(),
+  eyeColor: z.string().optional(),
+  // Status
   isAvailable: z.boolean().optional(),
+  profileStatus: z.enum(["DRAFT", "PUBLISHED", "HIDDEN", "ARCHIVED"]).optional(),
   profileImageUrl: z.string().optional(),
   profileImagePublicId: z.string().optional(),
-  bio: z.string().optional(),
+  // Location
   location: z.string().optional(),
 })
 
@@ -30,12 +56,15 @@ export async function GET(
       where: { id },
       include: {
         user: { include: { profile: true } },
-        agency: { select: { name: true, logoUrl: true } },
+        agency: { select: { name: true, logoUrl: true, isVerified: true } },
         reviews: true,
         applications: {
           include: { casting: { select: { title: true, location: true } } },
           take: 10,
           orderBy: { appliedAt: "desc" },
+        },
+        portfolioMedia: {
+          orderBy: { sortOrder: "asc" },
         },
       },
     })
@@ -72,11 +101,26 @@ export async function PATCH(
     }
 
     const body = await req.json()
-    const { bio, location, ...modelData } = updateSchema.parse(body)
+    const validated = updateSchema.parse(body)
+
+    // Handle dateOfBirth conversion
+    const { dateOfBirth, location, bio, categories, ...modelData } = validated
+    let parsedDateOfBirth: Date | undefined;
+    if (dateOfBirth) {
+      parsedDateOfBirth = new Date(dateOfBirth)
+    }
+
+    // Sync legacy `category` field with first entry from `categories` array
+    const updatedCategories = categories || undefined
+    const legacyCategory = categories && categories.length > 0 ? categories[0] : undefined
 
     const model = await prisma.model.update({
       where: { id },
-      data: modelData,
+      data: {
+        ...modelData,
+        ...(updatedCategories ? { categories: updatedCategories, category: legacyCategory || "Runway" } : {}),
+        ...(parsedDateOfBirth ? { dateOfBirth: parsedDateOfBirth } : {}),
+      },
     })
 
     if (bio !== undefined || location !== undefined) {

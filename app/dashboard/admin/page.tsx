@@ -21,12 +21,18 @@ interface Agency {
 interface DBUser { id: string; name: string; email: string; role: string; status: string; createdAt: string }
 interface DBCasting { id: string; title: string; location: string; isActive: boolean; _count: { applications: number } }
 interface ContactMsg { id: string; name: string; email: string; role: string; subject: string; createdAt: string }
+interface SubscriptionInfo {
+  id: string; plan: string; status: string; amount: number; currency: string;
+  currentPeriodEnd: string | null; createdAt: string;
+  user: { name: string; email: string; id: string };
+}
 
 export default function AdminDashboard() {
   const [agencies, setAgencies]     = useState<Agency[]>([]);
   const [users, setUsers]           = useState<DBUser[]>([]);
   const [castings, setCastings]     = useState<DBCasting[]>([]);
   const [contacts, setContacts]     = useState<ContactMsg[]>([]);
+  const [subscriptions, setSubscriptions] = useState<SubscriptionInfo[]>([]);
   const [loading, setLoading]       = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -37,16 +43,18 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      const [agenciesRes, usersRes, castingsRes, contactsRes] = await Promise.all([
+      const [agenciesRes, usersRes, castingsRes, contactsRes, subsRes] = await Promise.all([
         fetch("/api/admin/agencies"),
         fetch("/api/admin/users"),
         fetch("/api/castings?limit=10"),
         fetch("/api/contact"),
+        fetch("/api/admin/subscriptions"),
       ]);
       if (agenciesRes.ok)  { const d = await agenciesRes.json();  setAgencies(d.agencies ?? []); }
       if (usersRes.ok)     { const d = await usersRes.json();     setUsers(d.users ?? []); }
       if (castingsRes.ok)  { const d = await castingsRes.json();  setCastings(d.castings ?? []); }
       if (contactsRes.ok)  { const d = await contactsRes.json();  setContacts(d.messages ?? []); }
+      if (subsRes.ok)      { const d = await subsRes.json();      setSubscriptions(d.subscriptions ?? []); }
     } catch { /* silent */ } finally { setLoading(false); }
   };
 
@@ -162,6 +170,52 @@ export default function AdminDashboard() {
                             <td className="py-3 text-[#6B6257]">{u.email}</td>
                             <td className="py-3"><span className="bg-[#C8A96A]/10 text-[#8B6914] px-2 py-0.5 rounded-full text-[9px] font-bold uppercase">{u.role}</span></td>
                             <td className="py-3"><span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${u.status === "ACTIVE" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{u.status}</span></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Subscription Management */}
+              <div className="rounded-2xl border border-[#E7DED1] bg-white p-6 shadow-sm space-y-4">
+                <h3 className="font-serif text-lg font-bold uppercase tracking-widest text-[#1D1A16] border-b border-[#E7DED1]/70 pb-3 flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-[#C8A96A]" /> Active Subscriptions ({subscriptions.filter(s => s.status === "ACTIVE").length})
+                </h3>
+                {subscriptions.length === 0 ? (
+                  <EmptyState title="No subscriptions yet" description="Subscriptions will appear here once users upgrade." />
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b border-[#E7DED1] text-[9px] uppercase font-bold tracking-widest text-[#6B6257]">
+                          <th className="pb-3 pr-3">User</th><th className="pb-3 pr-3">Plan</th>
+                          <th className="pb-3 pr-3">Status</th><th className="pb-3 pr-3">Amount</th>
+                          <th className="pb-3">Expires</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E7DED1]/50">
+                        {subscriptions.slice(0, 20).map((s) => (
+                          <tr key={s.id}>
+                            <td className="py-3 pr-3">
+                              <span className="font-bold text-[#1D1A16]">{s.user?.name || "Unknown"}</span>
+                              <span className="block text-[#6B6257] text-[9px]">{s.user?.email}</span>
+                            </td>
+                            <td className="py-3 pr-3">
+                              <span className="bg-[#C8A96A]/10 text-[#8B6914] px-2 py-0.5 rounded-full text-[9px] font-bold uppercase">
+                                {s.plan?.replace(/_/g, " ") || "FREE"}
+                              </span>
+                            </td>
+                            <td className="py-3 pr-3">
+                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${s.status === "ACTIVE" ? "bg-emerald-100 text-emerald-700" : s.status === "EXPIRED" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"}`}>
+                                {s.status}
+                              </span>
+                            </td>
+                            <td className="py-3 pr-3 text-[#6B6257]">{s.amount?.toLocaleString()} {s.currency}</td>
+                            <td className="py-3 text-[#6B6257] text-[10px]">
+                              {s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString() : "—"}
+                            </td>
                           </tr>
                         ))}
                       </tbody>

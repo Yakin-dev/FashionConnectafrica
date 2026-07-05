@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { v4 as uuidv4 } from "uuid"
-import { PLANS, type PlanId } from "@/lib/flutterwave"
+import { PLANS, type PlanId, planIdToPrismaPlan } from "@/lib/flutterwave"
 import { prisma } from "@/lib/prisma"
 import { getSessionUser } from "@/lib/session"
 
@@ -19,13 +19,14 @@ export async function POST(request: Request) {
     }
 
     const txRef = `fc-${user.id.slice(0, 8)}-${Date.now()}-${uuidv4().slice(0, 6)}`
+    const prismaPlan = planIdToPrismaPlan(plan)
 
-    // Save a pending subscription in the DB so the webhook can match it
+    // Save a pending subscription reference in the DB
     await prisma.subscription.upsert({
       where: { userId: user.id },
       create: {
         userId: user.id,
-        plan: plan === "marketplace_annual" ? "MARKETPLACE_ANNUAL" : "MARKETPLACE_MONTHLY",
+        plan: prismaPlan as any,
         status: "EXPIRED",
         flwReference: txRef,
         amount: planConfig.amount,
@@ -33,49 +34,46 @@ export async function POST(request: Request) {
       },
       update: {
         flwReference: txRef,
-        plan: plan === "marketplace_annual" ? "MARKETPLACE_ANNUAL" : "MARKETPLACE_MONTHLY",
+        plan: prismaPlan as any,
         amount: planConfig.amount,
         currency: planConfig.currency,
+        status: "EXPIRED",
       },
     })
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
 
-    // Use Flutterwave's hosted checkout (Payments API) which supports
-    // MTN MoMo, Airtel Money, Visa, and Mastercard out of the box for RWF.
+    // Use Flutterwave's hosted checkout
     const flwSecretKey = process.env.FLW_SECRET_KEY ?? ""
 
-    const flwResponse = await fetch(
-      "https://api.flutterwave.com/v3/payments",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${flwSecretKey}`,
-          "Content-Type": "application/json",
+    const flwResponse = await fetch("https://api.flutterwave.com/v3/payments", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${flwSecretKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        tx_ref: txRef,
+        amount: planConfig.amount,
+        currency: planConfig.currency,
+        redirect_url: `${appUrl}/upgrade?success=true&tx_ref=${txRef}`,
+        customer: {
+          email: user.email,
+          name: user.name,
         },
-        body: JSON.stringify({
-          tx_ref: txRef,
-          amount: planConfig.amount,
-          currency: planConfig.currency,
-          redirect_url: `${appUrl}/pricing?success=true&tx_ref=${txRef}`,
-          customer: {
-            email: user.email,
-            name: user.name,
-          },
-          meta: {
-            userId: user.id,
-            plan: planConfig.id,
-          },
-          customizations: {
-            title: "FashionConnect.Africa",
-            description: `${planConfig.name} — ${planConfig.description}`,
-            logo: `${appUrl}/logo.jpeg`,
-          },
-          // Support all Rwandan payment methods
-          payment_options: "mobilemoneyrwanda,card",
-        }),
-      }
-    )
+        meta: {
+          userId: user.id,
+          plan: planConfig.id,
+          tier: planConfig.tier,
+        },
+        customizations: {
+          title: "FashionConnect.Africa",
+          description: `${planConfig.name} — ${planConfig.description}`,
+          logo: `${appUrl}/logo.jpeg`,
+        },
+        payment_options: "mobilemoneyrwanda,card",
+      }),
+    })
 
     const flwData = await flwResponse.json()
 
@@ -83,7 +81,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ url: flwData.data.link })
     }
 
-    // Log the error for debugging but return a friendly message
     console.error("[payments/create] Flutterwave error:", flwData)
     return NextResponse.json(
       { error: "Payment provider is temporarily unavailable. Please try again." },

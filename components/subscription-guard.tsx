@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Loader2, Lock } from "lucide-react"
 import Link from "next/link"
-
-const PROFESSIONAL_INTENTS = ["photographer", "designer", "studio"]
+import { requiresSubscription } from "@/lib/subscription"
 
 interface SubscriptionGuardProps {
   children: React.ReactNode
@@ -21,7 +20,7 @@ export function SubscriptionGuard({ children, intent }: SubscriptionGuardProps) 
 
   useEffect(() => {
     // If not a professional intent, allow through
-    if (intent && !PROFESSIONAL_INTENTS.includes(intent ?? "")) {
+    if (intent && !requiresSubscription(intent)) {
       setSubscribed(true)
       setChecking(false)
       return
@@ -49,7 +48,7 @@ export function SubscriptionGuard({ children, intent }: SubscriptionGuardProps) 
     )
   }
 
-  if (!subscribed && intent && PROFESSIONAL_INTENTS.includes(intent ?? "")) {
+  if (!subscribed && intent && requiresSubscription(intent)) {
     return (
       <div className="flex items-center justify-center py-20 px-4">
         <div className="max-w-md text-center bg-white rounded-3xl border border-[#E7DED1] p-10 shadow-sm">
@@ -64,7 +63,7 @@ export function SubscriptionGuard({ children, intent }: SubscriptionGuardProps) 
             Choose a plan that works for you.
           </p>
           <Link
-            href="/pricing"
+            href="/upgrade"
             className="inline-flex items-center gap-2 rounded-full bg-[#1D1A16] px-7 py-3.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-all"
           >
             View Plans

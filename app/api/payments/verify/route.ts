@@ -79,7 +79,8 @@ export async function GET(request: Request) {
 
       if (subscription && subscription.status !== "ACTIVE") {
         const periodEnd = new Date(now)
-        if (subscription.plan === "MARKETPLACE_ANNUAL") {
+        const planStr = subscription.plan as string
+        if (planStr === "PRO_ANNUAL" || planStr === "ULTIMATE_ANNUAL") {
           periodEnd.setFullYear(periodEnd.getFullYear() + 1)
         } else {
           periodEnd.setMonth(periodEnd.getMonth() + 1)

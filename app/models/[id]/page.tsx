@@ -7,9 +7,17 @@ import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import ReviewStars from "@/components/review-stars";
 import EmptyState from "@/components/empty-state";
-import { mockModels } from "@/lib/mock-data";
-import { MapPin, Sparkles, Award, CheckCircle, Video, Image as ImageIcon, Loader2, X, Copy, Check } from "lucide-react";
+import { MapPin, Loader2, X, Copy, Check, CheckCircle, Shield, Send, ExternalLink, Building, AlertCircle } from "lucide-react";
 import Link from "next/link";
+
+interface PortfolioMedia {
+  id: string;
+  url: string;
+  mediaType: string;
+  altText: string | null;
+  sortOrder: number;
+  isCover: boolean;
+}
 
 interface DBModel {
   id: string;
@@ -25,13 +33,36 @@ interface DBModel {
   isAvailable: boolean;
   profileImageUrl: string | null;
   viewsCount: number;
+  professionalName: string | null;
+  nationality: string | null;
+  languages: string[];
+  representationStatus: string | null;
+  travelAvailability: string | null;
+  categories: string[];
+  experienceLevel: string | null;
+  bio: string | null;
+  notableCredits: string | null;
+  skills: string[];
+  bustCm: number | null;
+  chestCm: number | null;
+  waistCm: number | null;
+  hipsCm: number | null;
+  inseamCm: number | null;
+  shoeSizeSystem: string | null;
+  dressSize: string | null;
+  jacketSize: string | null;
+  shirtSize: string | null;
+  trouserSize: string | null;
+  topSize: string | null;
+  bottomSize: string | null;
+  profileStatus: string;
   user: {
     name: string; email: string;
     profile: { bio: string | null; location: string | null; avatarUrl: string | null } | null;
   };
-  agency: { name: string; logoUrl: string | null } | null;
+  agency: { name: string; logoUrl: string | null; isVerified: boolean } | null;
   reviews: { id: string; authorName: string; rating: number; comment: string; createdAt: string }[];
-  applications: { id: string; status: string; casting: { title: string; location: string } }[];
+  portfolioMedia: PortfolioMedia[];
 }
 
 export default function ModelProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -39,9 +70,9 @@ export default function ModelProfilePage({ params }: { params: Promise<{ id: str
 
   const [dbModel, setDbModel]           = useState<DBModel | null>(null);
   const [loading, setLoading]           = useState(true);
-  const [activeTab, setActiveTab]       = useState<"photos" | "videos">("photos");
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied]             = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const copyProfileLink = () => {
     const url = `${window.location.origin}/models/${id}`;
@@ -50,20 +81,27 @@ export default function ModelProfilePage({ params }: { params: Promise<{ id: str
       setTimeout(() => setCopied(false), 2500);
     });
   };
+
+  // Booking inquiry form state
+  const [senderName, setSenderName]     = useState("");
+  const [senderEmail, setSenderEmail]   = useState("");
+  const [senderPhone, setSenderPhone]   = useState("");
   const [bookingDate, setBookingDate]   = useState("");
   const [bookingNotes, setBookingNotes] = useState("");
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
-
-  // Mock fallback
-  const mockModel = mockModels.find((m) => m.id === id);
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchModel() {
       try {
         const res = await fetch(`/api/models/${id}`);
         if (res.ok) { const d = await res.json(); setDbModel(d.model); }
-      } catch { /* use mock */ } finally { setLoading(false); }
+      } catch {
+        // DB unavailable — show not-found state
+      } finally {
+        setLoading(false);
+      }
     }
     fetchModel();
   }, [id]);
@@ -71,11 +109,39 @@ export default function ModelProfilePage({ params }: { params: Promise<{ id: str
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBookingLoading(true);
-    // Booking saved as notification/inquiry — no Booking table linked to client yet without Clerk
-    await new Promise((r) => setTimeout(r, 1000));
-    setBookingSuccess(true);
-    setBookingLoading(false);
-    setTimeout(() => { setBookingSuccess(false); setShowBookingModal(false); setBookingDate(""); setBookingNotes(""); }, 2500);
+    setBookingError(null);
+
+    try {
+      const res = await fetch(`/api/models/${id}/inquiry`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          senderName,
+          senderEmail,
+          senderPhone: senderPhone || undefined,
+          preferredDate: bookingDate,
+          notes: bookingNotes,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send inquiry");
+
+      setBookingSuccess(true);
+      setTimeout(() => {
+        setBookingSuccess(false);
+        setShowBookingModal(false);
+        setSenderName("");
+        setSenderEmail("");
+        setSenderPhone("");
+        setBookingDate("");
+        setBookingNotes("");
+      }, 2500);
+    } catch (err) {
+      setBookingError(err instanceof Error ? err.message : "Failed to submit inquiry");
+    } finally {
+      setBookingLoading(false);
+    }
   };
 
   if (loading) {
@@ -92,8 +158,8 @@ export default function ModelProfilePage({ params }: { params: Promise<{ id: str
     );
   }
 
-  // If neither DB nor mock found
-  if (!dbModel && !mockModel) {
+  // No data — show not-found state (no mock fallback)
+  if (!dbModel) {
     return (
       <>
         <Navbar />
@@ -105,189 +171,244 @@ export default function ModelProfilePage({ params }: { params: Promise<{ id: str
     );
   }
 
-  // Normalise to a single display shape
-  const name        = dbModel?.user.name        ?? mockModel!.name;
-  const category    = dbModel?.category         ?? mockModel!.category;
-  const location    = dbModel?.user.profile?.location ?? mockModel?.location ?? "";
-  const agencyName  = dbModel?.agency?.name     ?? mockModel?.agencyName ?? "Independent";
-  const bio         = dbModel?.user.profile?.bio ?? mockModel?.bio ?? "";
-  const height      = dbModel?.height           ?? mockModel!.height;
-  const waist       = dbModel?.waist            ?? mockModel?.waist;
-  const hips        = dbModel?.hips             ?? mockModel?.hips;
-  const shoeSize    = dbModel?.shoeSize         ?? mockModel?.shoeSize;
-  const isVerified  = dbModel?.isVerified       ?? mockModel?.isVerified ?? false;
-  const avatarUrl   = dbModel?.profileImageUrl ?? dbModel?.user.profile?.avatarUrl ?? mockModel?.avatarUrl
-    ?? "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80";
-  const portfolioImages = mockModel?.portfolioImages ?? [];
-  const portfolioVideos = mockModel?.portfolioVideos ?? [];
-  const reviews         = dbModel?.reviews ?? mockModel?.reviews ?? [];
-  const experienceTimeline = mockModel?.experienceTimeline ?? [];
+  // Normalise display data from DB only (no mock fallback)
+  const name              = dbModel.user.name;
+  const professionalName  = dbModel.professionalName || name;
+  const categories        = dbModel.categories?.length ? dbModel.categories : [dbModel.category || "Runway"];
+  const location          = dbModel.user.profile?.location || "";
+  const agencyName        = dbModel.agency?.name || "Independent";
+  const agencyVerified    = dbModel.agency?.isVerified ?? false;
+  const bio               = dbModel.bio || dbModel.user.profile?.bio || "";
+  const height            = dbModel.height;
+  const isAvailable       = dbModel.isAvailable ?? true;
+  const portfolioMedia    = dbModel.portfolioMedia ?? [];
+  const portfolioImages   = portfolioMedia
+    .filter(m => m.mediaType === "IMAGE")
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const portfolioVideos   = portfolioMedia.filter(m => m.mediaType === "VIDEO");
+  const reviews           = dbModel.reviews ?? [];
+
+  // Measurements - hide null values
+  const measurements: { label: string; value: string | null }[] = [
+    { label: "Height", value: height ? `${height} cm` : null },
+    ...(dbModel.bustCm ? [{ label: "Bust", value: `${dbModel.bustCm} cm` }] : []),
+    ...(dbModel.chestCm ? [{ label: "Chest", value: `${dbModel.chestCm} cm` }] : []),
+    ...(dbModel.waistCm ? [{ label: "Waist", value: `${dbModel.waistCm} cm` }] : []),
+    ...(dbModel.hipsCm ? [{ label: "Hips", value: `${dbModel.hipsCm} cm` }] : []),
+    ...(dbModel.inseamCm ? [{ label: "Inseam", value: `${dbModel.inseamCm} cm` }] : []),
+    ...(dbModel.shoeSize ? [{ label: "Shoe", value: String(dbModel.shoeSize) }] : []),
+    ...(dbModel.dressSize ? [{ label: "Dress", value: dbModel.dressSize }] : []),
+    ...(dbModel.jacketSize ? [{ label: "Jacket", value: dbModel.jacketSize }] : []),
+    ...(dbModel.hairColor ? [{ label: "Hair", value: dbModel.hairColor }] : []),
+    ...(dbModel.eyeColor ? [{ label: "Eyes", value: dbModel.eyeColor }] : []),
+  ];
+  const hasNoMeasurements = measurements.filter(m => m.value).length <= 1;
 
   return (
     <>
       <Navbar />
-      <main className="flex-1 bg-[#F8F5EF] py-12 sm:py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <main className="flex-1 bg-[#F8F5EF] min-h-screen">
 
-          <Link href="/models" className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#6B6257] hover:text-[#1D1A16] mb-8 block">
-            ← Back to Roster
-          </Link>
-
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 sm:gap-16 items-start">
-
-            {/* Left: Avatar */}
-            <div className="md:col-span-5 space-y-6">
-              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-[#E7DED1] bg-white p-3 shadow-md">
-                <div className="relative w-full h-full overflow-hidden rounded-xl bg-[#E7DED1]/30">
-                  <img src={avatarUrl} alt={name} className="object-cover w-full h-full" />
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Identity + stats */}
-            <div className="md:col-span-7 space-y-8">
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="rounded-full bg-[#C8A96A] px-3 py-1 text-[9px] font-bold uppercase tracking-widest text-white">
-                    {category} Model
+        {/* Hero / Cover Section */}
+        <div className="relative h-[50vh] min-h-[420px] bg-[#1D1A16] overflow-hidden">
+          {dbModel.profileImageUrl ? (
+            <img src={dbModel.profileImageUrl} alt={professionalName} className="absolute inset-0 w-full h-full object-cover object-center opacity-80" />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-[#1D1A16] to-[#2D2924]" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0C0A08]/95 via-[#0C0A08]/40 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-8 sm:p-12">
+            <div className="mx-auto max-w-7xl">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                {categories.slice(0, 3).map((cat) => (
+                  <span key={cat} className="rounded-full bg-[#C8A96A]/20 border border-[#C8A96A]/40 px-3 py-1 text-[9px] font-bold uppercase tracking-widest text-[#C8A96A]">
+                    {cat}
                   </span>
-                  {isVerified && (
-                    <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-[#C8A96A] bg-[#C8A96A]/10 px-2.5 py-0.5 rounded-full">
-                      <Sparkles className="h-2.5 w-2.5" /> Verified Talent
-                    </span>
-                  )}
-                  {dbModel && (
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                      Live Profile
-                    </span>
-                  )}
-                </div>
-
-                <h1 className="font-serif text-3xl sm:text-5xl font-bold text-[#1D1A16] tracking-tight uppercase">{name}</h1>
-
-                <div className="flex items-center gap-6 text-sm text-[#6B6257]">
-                  {location && (
-                    <div className="flex items-center gap-1.5">
-                      <MapPin className="h-4 w-4 text-[#C8A96A]" />{location}
-                    </div>
-                  )}
-                  <div className="text-[#C8A96A] font-bold uppercase tracking-wider text-xs">{agencyName}</div>
-                </div>
-              </div>
-
-              {bio && <p className="text-xs sm:text-sm text-[#6B6257] leading-relaxed max-w-xl">{bio}</p>}
-
-              {/* Stats */}
-              <div className="bg-white border border-[#E7DED1] rounded-2xl p-6 shadow-sm max-w-xl">
-                <h3 className="font-serif text-sm font-bold uppercase tracking-widest text-[#1D1A16] border-b border-[#E7DED1]/70 pb-3 mb-4">
-                  Physical Statistics
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-                  {[
-                    { label: "Height", value: `${height} cm` },
-                    { label: "Waist",  value: waist  ? `${waist} cm`  : "—" },
-                    { label: "Hips",   value: hips   ? `${hips} cm`   : "—" },
-                    { label: "Shoe",   value: shoeSize ?? "—" },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-[#6B6257] tracking-wider block">{label}</span>
-                      <span className="text-base font-bold text-[#1D1A16]">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <button onClick={() => setShowBookingModal(true)}
-                  className="rounded-full bg-[#1D1A16] px-8 py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-all shadow-md">
-                  Inquire & Book Model
-                </button>
-                <button
-                  onClick={copyProfileLink}
-                  className={`rounded-full border border-[#E7DED1] px-6 py-4 text-xs font-bold uppercase tracking-widest transition-all ${copied ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'text-[#6B6257] hover:bg-white hover:text-[#1D1A16]'}`}
-                >
-                  {copied ? (
-                    <span className="flex items-center gap-2"><Check className="h-4 w-4" /> Link Copied!</span>
-                  ) : (
-                    <span className="flex items-center gap-2"><Copy className="h-4 w-4" /> Share Profile</span>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Portfolio tabs */}
-          <div className="mt-20 border-b border-[#E7DED1]/70 pb-4 flex gap-6">
-            {[
-              { key: "photos" as const, icon: ImageIcon, label: `Editorial Book (${portfolioImages.length})` },
-              { key: "videos" as const, icon: Video,     label: `Catwalk Reels (${portfolioVideos.length})` },
-            ].map(({ key, icon: Icon, label }) => (
-              <button key={key} onClick={() => setActiveTab(key)}
-                className={`flex items-center gap-2 text-xs font-bold uppercase tracking-widest pb-2 transition-all ${activeTab === key ? "text-[#C8A96A] border-b-2 border-[#C8A96A]" : "text-[#6B6257]"}`}>
-                <Icon className="h-4 w-4" />{label}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-8">
-            {activeTab === "photos" ? (
-              portfolioImages.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {portfolioImages.map((img, i) => (
-                    <div key={i} className="group aspect-[3/4] relative overflow-hidden rounded-2xl border border-[#E7DED1] bg-white p-3 shadow-xs hover:shadow-lg transition-all duration-300">
-                      <div className="relative w-full h-full overflow-hidden rounded-xl">
-                        <img src={img} alt={`${name} pose ${i}`} className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState title="No photos yet" description="Portfolio images will appear here once uploaded." />
-              )
-            ) : portfolioVideos.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {portfolioVideos.map((vid, i) => (
-                  <div key={i} className="rounded-2xl border border-[#E7DED1] bg-white p-4 shadow-sm">
-                    <video src={vid} controls className="w-full rounded-xl aspect-video bg-black" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257] mt-3 block">Catwalk Reel {i + 1}</span>
-                  </div>
                 ))}
+                <span className={`rounded-full px-3 py-1 text-[9px] font-bold uppercase tracking-widest ${
+                  isAvailable ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30"
+                }`}>
+                  {isAvailable ? "Available" : "Currently Booked"}
+                </span>
               </div>
-            ) : (
-              <EmptyState title="No video reels" description="No runway reels uploaded yet." />
-            )}
+              <h1 className="font-serif text-4xl sm:text-6xl font-bold text-white uppercase leading-tight">{professionalName}</h1>
+              <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-white/70">
+                {location && (
+                  <span className="flex items-center gap-1.5">
+                    <MapPin className="h-4 w-4 text-[#C8A96A]" /> {location}
+                  </span>
+                )}
+                <span className="text-[#C8A96A] font-bold uppercase tracking-wider">
+                  Represented by {agencyName}
+                </span>
+                {agencyVerified && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#C8A96A] bg-[#C8A96A]/10 px-2.5 py-0.5 rounded-full">
+                    <Shield className="h-3 w-3" /> Verified Agency Representation
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-3 mt-5">
+                <button onClick={() => setShowBookingModal(true)}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#C8A96A] px-6 py-3 text-xs font-bold uppercase tracking-widest text-[#11100E] hover:bg-[#BCA062] transition-colors shadow-lg">
+                  <Send className="h-3.5 w-3.5" /> Contact Representing Agency
+                </button>
+                <button onClick={copyProfileLink}
+                  className={`inline-flex items-center gap-2 rounded-full border border-white/30 px-6 py-3 text-xs font-bold uppercase tracking-widest transition-colors ${
+                    copied ? 'bg-emerald-500/20 border-emerald-400 text-emerald-400' : 'text-white hover:bg-white/10'
+                  }`}>
+                  {copied ? <><Check className="h-3.5 w-3.5" /> Link Copied!</> : <><Copy className="h-3.5 w-3.5" /> Share Profile</>}
+                </button>
+              </div>
+            </div>
           </div>
+        </div>
 
-          {/* Experience + Reviews */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 mt-20 pt-12 border-t border-[#E7DED1]/70">
-            <div className="space-y-8">
-              <h3 className="font-serif text-xl font-bold uppercase tracking-widest text-[#1D1A16] flex items-center gap-2">
-                <Award className="h-5 w-5 text-[#C8A96A]" /> Show Experience
-              </h3>
-              {experienceTimeline.length > 0 ? (
-                <div className="border-l-2 border-[#E7DED1] ml-2 pl-6 space-y-6">
-                  {experienceTimeline.map((item) => (
-                    <div key={item.id} className="relative space-y-1">
-                      <div className="absolute -left-[31px] top-1.5 h-3 w-3 rounded-full bg-[#C8A96A] border-2 border-[#F8F5EF]" />
-                      <span className="text-[10px] font-bold text-[#C8A96A] tracking-widest block uppercase">{item.year}</span>
-                      <h4 className="text-sm font-bold text-[#1D1A16] uppercase">{item.title}</h4>
-                      <p className="text-xs text-[#6B6257] leading-relaxed">{item.description}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-[#6B6257] italic">No timeline milestones documented yet.</p>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+
+            {/* Left Column: Profile summary + bio */}
+            <div className="lg:col-span-7 space-y-10">
+
+              {/* Profile Summary */}
+              <section>
+                <h2 className="font-serif text-xl font-bold text-[#1D1A16] uppercase tracking-widest mb-4">About</h2>
+                <p className="text-sm text-[#6B6257] leading-relaxed">{bio || "Professional biography not yet provided."}</p>
+              </section>
+
+              {/* Skills */}
+              {dbModel.skills && dbModel.skills.length > 0 && (
+                <section>
+                  <h2 className="font-serif text-xl font-bold text-[#1D1A16] uppercase tracking-widest mb-4">Skills</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {dbModel.skills.map((skill) => (
+                      <span key={skill} className="rounded-full bg-[#F8F5EF] border border-[#E7DED1] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#6B6257]">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </section>
               )}
+
+              {/* Experience Level */}
+              {dbModel.experienceLevel && (
+                <section className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257]">Experience:</span>
+                  <span className="text-xs font-bold text-[#1D1A16]">{dbModel.experienceLevel}</span>
+                  {dbModel.notableCredits && (
+                    <span className="text-[10px] text-[#C8A96A] ml-2">— {dbModel.notableCredits}</span>
+                  )}
+                </section>
+              )}
+
+              {/* Languages */}
+              {dbModel.languages && dbModel.languages.length > 0 && (
+                <section className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257]">Languages:</span>
+                  {dbModel.languages.map((lang) => (
+                    <span key={lang} className="text-xs text-[#1D1A16]">{lang}</span>
+                  ))}
+                  {dbModel.travelAvailability && (
+                    <span className="text-[10px] text-[#C8A96A] ml-2">· {dbModel.travelAvailability}</span>
+                  )}
+                </section>
+              )}
+
+              {/* Portfolio Gallery */}
+              <section>
+                <h2 className="font-serif text-xl font-bold text-[#1D1A16] uppercase tracking-widest mb-6">Portfolio</h2>
+                {portfolioImages.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {portfolioImages.map((media, i) => (
+                      <button
+                        key={media.id}
+                        onClick={() => setLightboxIndex(i)}
+                        className="group aspect-[3/4] relative overflow-hidden rounded-xl border border-[#E7DED1] bg-white p-2 shadow-sm hover:shadow-lg transition-all duration-300"
+                      >
+                        <div className="relative w-full h-full overflow-hidden rounded-lg bg-[#E7DED1]/30">
+                          <img src={media.url} alt={media.altText || `${professionalName} ${i + 1}`} className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-[#E7DED1] bg-white p-8 text-center">
+                    <p className="text-xs text-[#6B6257]">Portfolio images will appear here once uploaded by the representing agency.</p>
+                  </div>
+                )}
+              </section>
+
             </div>
 
-            <div className="space-y-8">
-              <h3 className="font-serif text-xl font-bold uppercase tracking-widest text-[#1D1A16] flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-[#C8A96A]" /> Client Appreciations
-              </h3>
-              {reviews.length > 0 ? (
-                <div className="space-y-6">
+            {/* Right Column: Measurements + Agency Info */}
+            <div className="lg:col-span-5 space-y-8">
+
+              {/* Measurements */}
+              <div className="bg-white border border-[#E7DED1] rounded-2xl p-6 shadow-sm">
+                <h3 className="font-serif text-sm font-bold uppercase tracking-widest text-[#1D1A16] border-b border-[#E7DED1]/70 pb-3 mb-4">
+                  Professional Measurements
+                </h3>
+                {hasNoMeasurements ? (
+                  <p className="text-xs text-[#6B6257] italic">Details available through the representing agency.</p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {measurements.filter(m => m.value).map(({ label, value }) => (
+                      <div key={label} className="space-y-1">
+                        <span className="text-[9px] uppercase font-bold text-[#6B6257] tracking-wider block">{label}</span>
+                        <span className="text-sm font-bold text-[#1D1A16]">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Agency Information */}
+              <div className="bg-[#F8F5EF] border border-[#E7DED1] rounded-2xl p-6 shadow-sm">
+                <h3 className="font-serif text-sm font-bold uppercase tracking-widest text-[#1D1A16] border-b border-[#E7DED1]/70 pb-3 mb-4">
+                  Representing Agency
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4 text-[#C8A96A]" />
+                      <span className="text-xs font-bold text-[#1D1A16]">{agencyName}</span>
+                    </div>
+                    {agencyVerified && (
+                      <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        <Shield className="h-2.5 w-2.5" /> Verified
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-[#6B6257] leading-relaxed">
+                    Booking enquiries and casting requests are coordinated through the model&apos;s representing agency.
+                  </p>
+                  <div className="flex flex-col gap-2 pt-2">
+                    <button
+                      onClick={() => setShowBookingModal(true)}
+                      className="w-full rounded-full bg-[#1D1A16] py-3 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Send className="h-3 w-3" />
+                      Contact Representing Agency
+                    </button>
+                    <Link
+                      href={`/search?type=agencies`}
+                      className="w-full text-center text-[10px] font-bold uppercase tracking-widest text-[#6B6257] hover:text-[#C8A96A] transition-colors flex items-center justify-center gap-1"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Explore More Talent from This Agency
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reviews */}
+              {reviews.length > 0 && (
+                <div className="bg-white border border-[#E7DED1] rounded-2xl p-6 shadow-sm space-y-4">
+                  <h3 className="font-serif text-sm font-bold uppercase tracking-widest text-[#1D1A16] border-b border-[#E7DED1]/70 pb-3">
+                    Client Appreciations
+                  </h3>
                   {reviews.map((r) => (
-                    <div key={r.id} className="rounded-2xl bg-white border border-[#E7DED1] p-5 shadow-xs space-y-2">
+                    <div key={r.id} className="space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-[#1D1A16] uppercase">{r.authorName}</span>
                         <ReviewStars rating={r.rating} />
@@ -296,50 +417,88 @@ export default function ModelProfilePage({ params }: { params: Promise<{ id: str
                     </div>
                   ))}
                 </div>
-              ) : (
-                <p className="text-xs text-[#6B6257] italic">No client evaluations yet.</p>
               )}
+
             </div>
           </div>
         </div>
       </main>
 
-      {/* Booking Modal */}
+      {/* Lightbox */}
+      {lightboxIndex !== null && portfolioImages.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightboxIndex(null)}>
+          <button onClick={() => setLightboxIndex(null)} className="absolute top-4 right-4 text-white/70 hover:text-white z-10">
+            <X className="h-8 w-8" />
+          </button>
+          <div className="max-w-4xl max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={portfolioImages[lightboxIndex].url}
+              alt={portfolioImages[lightboxIndex].altText || `${professionalName} ${lightboxIndex + 1}`}
+              className="max-w-full max-h-[85vh] object-contain rounded-2xl"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Booking Inquiry Modal */}
       {showBookingModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-md bg-[#F8F5EF] rounded-2xl border border-[#E7DED1] p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#E7DED1]/70 pb-3 mb-4">
-              <h3 className="font-serif text-xl font-bold text-[#1D1A16] uppercase">Request Booking</h3>
+              <h3 className="font-serif text-xl font-bold text-[#1D1A16] uppercase">Contact Agency</h3>
               <button onClick={() => setShowBookingModal(false)} className="text-[#6B6257] hover:text-[#1D1A16]"><X className="h-5 w-5" /></button>
             </div>
-
             {bookingSuccess ? (
               <div className="py-8 text-center space-y-3">
                 <div className="mx-auto rounded-full bg-emerald-100 p-3 text-emerald-600 w-fit"><CheckCircle className="h-8 w-8" /></div>
                 <h4 className="font-serif text-base font-bold uppercase text-[#1D1A16]">Inquiry Sent!</h4>
-                <p className="text-xs text-[#6B6257] uppercase tracking-wider">The model and agency have been notified.</p>
+                <p className="text-xs text-[#6B6257] uppercase tracking-wider">The representing agency has been notified.</p>
               </div>
             ) : (
               <form onSubmit={handleBookingSubmit} className="space-y-4">
                 <p className="text-[11px] text-[#6B6257] uppercase tracking-wider">
-                  Booking <strong>{name}</strong> — {agencyName}
+                  Booking enquiry for <strong>{professionalName}</strong> — {agencyName}
                 </p>
+                <p className="text-[10px] text-[#6B6257] italic">All booking inquiries are directed to the representing agency. Private contact details are not shared.</p>
+
+                {bookingError && (
+                  <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-600 flex items-start gap-2">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    {bookingError}
+                  </div>
+                )}
+
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Preferred Date</label>
-                  <input type="date" required value={bookingDate} onChange={(e) => setBookingDate(e.target.value)}
-                    className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none" />
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Your Name *</label>
+                  <input type="text" required value={senderName} onChange={(e) => setSenderName(e.target.value)}
+                    placeholder="e.g. Alice Mugisha" className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none focus:border-[#C8A96A]" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Notes / Requirements</label>
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Your Email *</label>
+                  <input type="email" required value={senderEmail} onChange={(e) => setSenderEmail(e.target.value)}
+                    placeholder="you@company.com" className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Phone (optional)</label>
+                  <input type="tel" value={senderPhone} onChange={(e) => setSenderPhone(e.target.value)}
+                    placeholder="+250 788 000 000" className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Preferred Date *</label>
+                  <input type="date" required value={bookingDate} onChange={(e) => setBookingDate(e.target.value)}
+                    className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Requirements *</label>
                   <textarea rows={3} required value={bookingNotes} onChange={(e) => setBookingNotes(e.target.value)}
-                    placeholder="Describe the booking requirements..." className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none resize-none" />
+                    placeholder="Describe the project, requirements, and usage..." className="w-full rounded-xl border border-[#E7DED1] bg-white p-3 text-xs focus:outline-none focus:border-[#C8A96A] resize-none" />
                 </div>
                 <div className="flex gap-3 justify-end pt-2">
                   <button type="button" onClick={() => setShowBookingModal(false)}
                     className="rounded-full border border-[#E7DED1] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-[#6B6257] hover:bg-white">Cancel</button>
                   <button type="submit" disabled={bookingLoading}
                     className="rounded-full bg-[#1D1A16] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] disabled:opacity-60 flex items-center gap-1.5">
-                    {bookingLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Submit Booking
+                    {bookingLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Send Inquiry
                   </button>
                 </div>
               </form>

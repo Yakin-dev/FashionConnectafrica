@@ -12,6 +12,18 @@ enum Role {
   CLIENT
   ADMIN
   MARKETPLACE_PROVIDER
+  MAKEUP_ARTIST
+  FASHION_STYLIST
+  HAIR_STYLIST
+  VIDEOGRAPHER
+}
+
+enum VerificationStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
 }
 
 enum UserStatus {
@@ -82,6 +94,7 @@ model User {
   receivedMessages    Message[]        @relation("ReceivedMessages")
   notifications       Notification[]
   pushSubscriptions   PushSubscription[]
+  businessProfile     BusinessProfile?
   contactMessages     ContactMessage[]
   marketplaceProvider MarketplaceProvider?
   subscription Subscription?
@@ -153,6 +166,37 @@ model Model {
   hairColor           String?
   experienceYears     Int                  @default(0)
 
+  // New professional fields
+  professionalName    String?
+  dateOfBirth         DateTime?
+  nationality         String?
+  languages           String[]
+  representationStatus String?
+  travelAvailability  String?
+  categories          String[]
+  experienceLevel     String?
+  bio                 String?
+  notableCredits      String?
+  skills              String[]
+
+  // Extended measurements
+  bustCm              Float?
+  chestCm             Float?
+  waistCm             Float?
+  hipsCm              Float?
+  inseamCm            Float?
+  shoeSizeSystem      String?
+  dressSize           String?
+  jacketSize          String?
+  shirtSize           String?
+  trouserSize         String?
+  topSize             String?
+  bottomSize          String?
+
+  // Profile management
+  profileStatus       String               @default("DRAFT")
+  privateContactEmail String?
+
   isVerified          Boolean              @default(false)
   isAvailable         Boolean              @default(true)
   profileCompletion   Int                  @default(10)
@@ -167,6 +211,7 @@ model Model {
   bookings            Booking[]
   taggedEvents        Event[]              @relation("TaggedModels")
   reviews             Review[]
+  portfolioMedia      ModelPortfolioMedia[]
 }
 
 model Agency {
@@ -180,8 +225,9 @@ model Agency {
   description         String?
   location            String
   modelCount          String?
-  isVerified          Boolean     @default(false)
-  pilotStatus         PilotStatus @default(PENDING)
+  isVerified          Boolean          @default(false)
+  verificationStatus  VerificationStatus @default(PENDING_REVIEW)
+  pilotStatus         PilotStatus       @default(PENDING)
 
   models              Model[]
   castings            Casting[]
@@ -232,6 +278,23 @@ model CastingApplication {
   notes       String?
   appliedAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
+}
+
+model ModelPortfolioMedia {
+  id                String   @id @default(uuid())
+  modelProfileId    String
+  modelProfile      Model    @relation(fields: [modelProfileId], references: [id], onDelete: Cascade)
+
+  url               String
+  publicId          String
+  mediaType         String   @default("IMAGE") // IMAGE or VIDEO
+  altText           String?
+  sortOrder         Int      @default(0)
+  isCover           Boolean  @default(false)
+
+  createdAt         DateTime @default(now())
+
+  @@index([modelProfileId])
 }
 
 model Booking {
@@ -360,9 +423,81 @@ model MarketplaceProvider {
   updatedAt       DateTime @updatedAt
 }
 
+model BusinessProfile {
+  id                  String             @id @default(uuid())
+  userId              String             @unique
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role                String             // agency, client, event_organizer, photographer, designer, studio
+
+  // Common fields across all roles
+  businessName        String?
+  businessType        String?
+  country             String?
+  city                String?
+  address             String?
+  email               String?
+  phone               String?
+  websiteUrl          String?
+  instagramUrl        String?
+  description         String?
+  contactPersonName   String?
+  contactPersonRole   String?
+
+  // Agency-specific
+  establishedYear     Int?
+  operationMonths     Int?
+  registrationStatus  String?
+  registrationNumber  String?
+  representedModelCount String?
+  talentCategories    String[]
+  agencyServices      String[]
+
+  // Photographer-specific
+  specialties         String[]
+  experienceLevel     String?
+  serviceArea         String?
+  startingPriceRange  String?
+
+  // Designer-specific
+  designFocus         String[]
+  designServices      String[]
+  productionCapacity  String?
+
+  // Studio-specific
+  studioServices      String[]
+  studioFacilities    String[]
+  studioAvailability  String?
+  capacity            String?
+
+  // Event organizer-specific
+  organizerType       String?
+  eventScale          String?
+  eventFrequency      String?
+  nextEventDate       DateTime?
+  requiredServices    String[]
+
+  // Client-specific
+  mainPurpose         String[]
+  projectTypes        String[]
+  hiringFrequency     String?
+
+  // Business verification
+  verificationStatus  VerificationStatus @default(DRAFT)
+  verificationDocUrl  String?
+  logoUrl             String?
+
+  submittedAt         DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+}
+
 enum SubscriptionPlan {
-  MARKETPLACE_MONTHLY
-  MARKETPLACE_ANNUAL
+  FREE
+  PRO_MONTHLY
+  PRO_ANNUAL
+  ULTIMATE_MONTHLY
+  ULTIMATE_ANNUAL
 }
 
 enum SubscriptionStatus {
@@ -376,7 +511,7 @@ model Subscription {
   userId            String             @unique
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  plan              SubscriptionPlan   @default(MARKETPLACE_MONTHLY)
+  plan              SubscriptionPlan   @default(FREE)
   status            SubscriptionStatus @default(EXPIRED)
 
   flwReference      String?            @unique

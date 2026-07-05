@@ -40,33 +40,33 @@ const STATS = [
 const FEATURES = [
   {
     icon: ShieldCheck,
-    title: "Editorial Portfolios",
-    desc: "Upload high-resolution images, precise physical stats, and catwalk reels — all securely stored and beautifully presented.",
+    title: "Agency-Managed Model Portfolios",
+    desc: "Agencies create and maintain polished model portfolios with professional images, measurements, categories, skills, and availability details.",
   },
   {
     icon: Award,
-    title: "Direct Bookings",
-    desc: "Connect directly with casting directors. Inquire, manage sessions, and track deadlines from your personal dashboard.",
+    title: "Professional Agency Bookings",
+    desc: "Clients and event organizers discover agencies, review represented talent, and send booking or casting requests through the agency for professional coordination.",
   },
   {
     icon: Briefcase,
-    title: "Creative Services",
-    desc: "Hire vetted fashion photographers, makeup artists, catwalk coaches, and studio spaces — all in one marketplace.",
+    title: "Fashion Services Marketplace",
+    desc: "Discover trusted photographers, fashion designers, makeup artists, stylists, videographers, studios, and other creative partners in one marketplace.",
   },
   {
     icon: Camera,
-    title: "Casting Briefs",
-    desc: "Browse open castings from leading agencies. Apply with one click and receive real-time status updates.",
+    title: "Casting Opportunities",
+    desc: "Clients, brands, and event organizers publish casting opportunities. Agencies submit suitable represented models and track each submission outcome.",
   },
   {
     icon: Users,
-    title: "Agency Rosters",
-    desc: "Agencies manage their full talent roster, add models, post castings, and track application pipelines easily.",
+    title: "Agency Talent Management",
+    desc: "Agencies manage their talent roster, update model portfolios, control availability, and submit suitable models to opportunities.",
   },
   {
     icon: TrendingUp,
-    title: "Profile Analytics",
-    desc: "Models track profile views, application outcomes, and visibility metrics to grow their career intelligently.",
+    title: "Featured Business Visibility",
+    desc: "Agencies and fashion service providers can improve their visibility through featured placement, helping more clients and partners discover their work.",
   },
 ];
 
@@ -115,11 +115,17 @@ export default function LandingPage() {
             transition={{ duration: 1.2, ease: "easeInOut" }}
             className="absolute inset-0"
           >
-            <img
-              src={slide.image}
-              alt={slide.tag}
-              className="absolute inset-0 w-full h-full object-cover object-top"
-            />
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              poster={slide.image}
+              className="absolute inset-0 w-full h-full object-cover object-center"
+            >
+              <source src="/media/fashion-hero.mp4" type="video/mp4" />
+            </video>
             <div className="absolute inset-0 bg-gradient-to-t from-[#0C0A08]/95 via-[#0C0A08]/50 to-[#0C0A08]/20" />
           </motion.div>
         </AnimatePresence>
@@ -359,9 +365,9 @@ export default function LandingPage() {
             className="grid grid-cols-1 sm:grid-cols-3 gap-8 relative"
           >
             {[
-              { step: "01", title: "Create Your Profile", desc: "Sign up free, complete your profile, and choose your role — model, agency, or client." },
-              { step: "02", title: "Build Your Presence", desc: "Upload photos, add stats, post castings, or list your creative services." },
-              { step: "03", title: "Connect & Grow", desc: "Get discovered, apply for castings, or book the talent you need — all in one place." },
+              { step: "01", title: "Join as a Fashion Business", desc: "Create an account as an agency, client, event organizer, or fashion service provider. Complete your business profile and choose how you want to connect within the fashion industry." },
+              { step: "02", title: "Showcase Your Work", desc: "Agencies manage professional model portfolios, while fashion service providers present their services, work samples, and business details to the right partners." },
+              { step: "03", title: "Connect, Hire & Grow", desc: "Post casting opportunities, discover trusted agencies and creative services, submit represented models, and build valuable fashion partnerships in one professional space." },
             ].map((item) => (
               <motion.div
                 key={item.step}
@@ -397,7 +403,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-wrap gap-4 justify-center pt-2">
             <Link
-              href="/pricing"
+              href="/upgrade"
               className="rounded-full bg-[#C8A96A] px-9 py-4 text-sm font-bold uppercase tracking-widest text-[#11100E] hover:bg-[#BCA062] transition-colors shadow-lg inline-flex items-center gap-2"
             >
               View Plans <ArrowRight className="h-4 w-4" />

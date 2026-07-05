@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link"
-import { Camera, Music } from "lucide-react"
 import Image from "next/image"
 
 export default function Footer() {
@@ -26,16 +25,8 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-xs text-[#6B6257] leading-relaxed max-w-sm">
-              Connecting Africa&apos;s elite fashion modeling talent, top agencies, and global luxury clients in a professional, high-end creative directory ecosystem.
+              Connecting Africa&apos;s modelling agencies, fashion businesses, creative service providers, clients, and event organizers in one professional fashion ecosystem.
             </p>
-            <div className="flex gap-3 items-center">
-              <a href="#" className="rounded-full bg-[#1D1A16] p-2.5 text-[#C8A96A] hover:bg-[#C8A96A] hover:text-[#11100E] transition-all" aria-label="Instagram">
-                <Camera className="h-4 w-4" />
-              </a>
-              <a href="#" className="rounded-full bg-[#1D1A16] p-2.5 text-[#C8A96A] hover:bg-[#C8A96A] hover:text-[#11100E] transition-all" aria-label="TikTok">
-                <Music className="h-4 w-4" />
-              </a>
-            </div>
           </div>
 
           {/* Links: Platform */}

@@ -8,42 +8,80 @@ import { useAuth } from "@/lib/auth-context";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import {
-  ArrowRight, ArrowLeft, CheckCircle2,
-  User, Building, Briefcase, Camera, Scissors, Video,
+  ArrowRight, CheckCircle2,
+  Building, Briefcase, CalendarDays, Camera, Scissors, Video,
+  Sparkles, ShieldAlert,
 } from "lucide-react";
+import {
+  AgencyForm, ClientForm, EventOrganizerForm,
+  PhotographerForm, DesignerForm, StudioForm,
+  MakeupArtistForm, FashionStylistForm, HairStylistForm, VideographerForm,
+} from "@/components/onboarding-forms";
 
 const ROLES = [
   {
-    id: "photographer",
-    title: "Photographer",
-    desc: "I'm a fashion or editorial photographer",
-    icon: Camera,
-  },
-  {
-    id: "designer",
-    title: "Fashion Designer",
-    desc: "I'm a designer who needs models for shows or campaigns",
-    icon: Scissors,
-  },
-  {
-    id: "studio",
-    title: "Content Studio Owner",
-    desc: "I own a studio where models shoot portfolios and reels",
-    icon: Video,
-  },
-  {
     id: "agency",
     title: "Model Agency",
-    desc: "I manage a modeling agency or talent roster",
+    desc: "I manage represented fashion talent and professional model portfolios.",
     icon: Building,
   },
   {
     id: "client",
     title: "Brand / Client",
-    desc: "I represent a brand or business looking to hire talent",
+    desc: "I represent a brand or business looking for agencies, talent, or creative services.",
     icon: Briefcase,
   },
+  {
+    id: "event_organizer",
+    title: "Event Organizer",
+    desc: "I organize fashion events, campaigns, shows, productions, or experiences.",
+    icon: CalendarDays,
+  },
+  {
+    id: "photographer",
+    title: "Photographer",
+    desc: "I provide fashion, editorial, runway, studio, or campaign photography.",
+    icon: Camera,
+  },
+  {
+    id: "designer",
+    title: "Fashion Designer",
+    desc: "I design garments, collections, couture, ready-to-wear, or styling concepts.",
+    icon: Scissors,
+  },
+  {
+    id: "studio",
+    title: "Content Studio Owner",
+    desc: "I manage a studio for fashion shoots, content production, styling, or creative work.",
+    icon: Video,
+  },
+  {
+    id: "makeup_artist",
+    title: "Makeup Artist",
+    desc: "I provide beauty, editorial, bridal, runway, or campaign makeup services.",
+    icon: Sparkles,
+  },
+  {
+    id: "fashion_stylist",
+    title: "Fashion Stylist",
+    desc: "I provide wardrobe styling, creative direction, personal styling, or campaign styling.",
+    icon: Scissors,
+  },
+  {
+    id: "hair_stylist",
+    title: "Hair Stylist",
+    desc: "I provide professional hair styling for runway, editorial, bridal, shoots, or events.",
+    icon: Sparkles,
+  },
+  {
+    id: "videographer",
+    title: "Videographer / Production Studio",
+    desc: "I create fashion films, campaign videos, runway videos, reels, and production content.",
+    icon: Video,
+  },
 ];
+
+const ADMIN_ONLY_ROLES = ["admin", "staff"];
 
 const slideVariants = {
   enter: { opacity: 0, x: 32 },
@@ -64,14 +102,22 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [purpose, setPurpose] = useState("");
-  const [intentData, setIntentData] = useState<Record<string, string>>({});
-
-  const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setIntentData((prev) => ({ ...prev, [key]: e.target.value }));
+  const [intentData, setIntentData] = useState<Record<string, any>>({});
+  const [adminBlocked, setAdminBlocked] = useState(false);
 
   const handleRoleSelect = (id: string) => {
+    if (ADMIN_ONLY_ROLES.includes(id)) {
+      setAdminBlocked(true);
+      return;
+    }
+    setAdminBlocked(false);
     setPurpose(id);
     setStep(2);
+  };
+
+  const handlePhase2Success = (data: any) => {
+    setIntentData((prev) => ({ ...prev, ...data }));
+    setStep(3);
   };
 
   const handleSubmit = async () => {
@@ -179,13 +225,25 @@ export default function OnboardingPage() {
                     );
                   })}
                 </div>
+
+                {adminBlocked && (
+                  <div className="mt-5 rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
+                    <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-bold text-amber-800 uppercase tracking-wider">Administrator Access</p>
+                      <p className="text-xs text-amber-700 mt-1">
+                        Administrator and staff access is invitation-only. Please contact your platform administrator if you believe you should have this role.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
 
-            {/* ── Step 2: Role details ──────────────────────────────── */}
+            {/* ── Step 2: Role-specific forms ───────────────────────── */}
             {step === 2 && (
               <motion.div
-                key="step2"
+                key="step2-container"
                 variants={slideVariants}
                 initial="enter"
                 animate="center"
@@ -202,125 +260,76 @@ export default function OnboardingPage() {
                   </div>
                 )}
 
-                <h2 className="font-serif text-xl font-bold text-center uppercase mb-1">A bit more detail</h2>
-                <p className="text-sm text-[#6B6257] text-center mb-7">This helps us set up your dashboard correctly.</p>
-
-                <div className="space-y-4">
-
-                  {/* Photographer */}
-                  {purpose === "photographer" && (
-                    <>
-                      <div>
-                        <label className={labelClass}>Your Name / Brand</label>
-                        <input type="text" className={inputClass} placeholder="e.g. Kwame Studio" value={intentData.businessName || ""} onChange={set("businessName")} />
-                      </div>
-                      <div>
-                        <label className={labelClass}>Photography Specialty</label>
-                        <select className={inputClass} value={intentData.specialty || ""} onChange={set("specialty")}>
-                          <option value="" disabled>Select specialty</option>
-                          <option value="Editorial">Editorial</option>
-                          <option value="Runway">Runway / Catwalk</option>
-                          <option value="Commercial">Commercial / Brand</option>
-                          <option value="Beauty">Beauty / Cosmetics</option>
-                          <option value="Lifestyle">Lifestyle</option>
-                          <option value="Portfolio">Model Portfolio</option>
-                        </select>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Fashion Designer */}
-                  {purpose === "designer" && (
-                    <>
-                      <div>
-                        <label className={labelClass}>Label / Brand Name</label>
-                        <input type="text" className={inputClass} placeholder="e.g. Keza Couture" value={intentData.companyName || ""} onChange={set("companyName")} />
-                      </div>
-                      <div>
-                        <label className={labelClass}>Design Focus</label>
-                        <select className={inputClass} value={intentData.designFocus || ""} onChange={set("designFocus")}>
-                          <option value="" disabled>Select your focus</option>
-                          <option value="Haute Couture">Haute Couture</option>
-                          <option value="Ready-to-Wear">Ready-to-Wear</option>
-                          <option value="Accessories">Accessories</option>
-                          <option value="Bridal">Bridal</option>
-                          <option value="Streetwear">Streetwear</option>
-                          <option value="African Print">African Print / Ankara</option>
-                        </select>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Content Studio Owner */}
-                  {purpose === "studio" && (
-                    <>
-                      <div>
-                        <label className={labelClass}>Studio Name</label>
-                        <input type="text" className={inputClass} placeholder="e.g. Studio 250 Kigali" value={intentData.businessName || ""} onChange={set("businessName")} />
-                      </div>
-                      <div>
-                        <label className={labelClass}>Studio Services</label>
-                        <select className={inputClass} value={intentData.service || ""} onChange={set("service")}>
-                          <option value="" disabled>What does your studio offer?</option>
-                          <option value="Photography">Photography only</option>
-                          <option value="Video & Reels">Video & Reels only</option>
-                          <option value="Photography & Video">Photography & Video / Reels</option>
-                          <option value="Full Production">Full production (photo + video + makeup)</option>
-                        </select>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Model Agency */}
-                  {purpose === "agency" && (
-                    <>
-                      <div>
-                        <label className={labelClass}>Agency Name</label>
-                        <input type="text" className={inputClass} placeholder="e.g. Kigali Elite Models" value={intentData.agencyName || ""} onChange={set("agencyName")} />
-                      </div>
-                      <div>
-                        <label className={labelClass}>Location</label>
-                        <input type="text" className={inputClass} placeholder="e.g. Kigali, Rwanda" value={intentData.location || ""} onChange={set("location")} />
-                      </div>
-                    </>
-                  )}
-
-                  {/* Brand / Client */}
-                  {purpose === "client" && (
-                    <>
-                      <div>
-                        <label className={labelClass}>Company / Brand Name</label>
-                        <input type="text" className={inputClass} placeholder="e.g. Rwanda Breweries" value={intentData.companyName || ""} onChange={set("companyName")} />
-                      </div>
-                      <div>
-                        <label className={labelClass}>What are you looking for?</label>
-                        <select className={inputClass} value={intentData.clientPurpose || ""} onChange={set("clientPurpose")}>
-                          <option value="" disabled>Select goal</option>
-                          <option value="Hire models">Hire models for a campaign</option>
-                          <option value="Post casting">Post a casting call</option>
-                          <option value="Browse portfolios">Browse model portfolios</option>
-                          <option value="Hire creative services">Hire creative services</option>
-                        </select>
-                      </div>
-                    </>
-                  )}
-
-                </div>
-
-                <div className="flex justify-between mt-8">
-                  <button
-                    onClick={() => setStep(1)}
-                    className="flex items-center gap-2 text-[#6B6257] hover:text-[#1D1A16] font-semibold text-sm uppercase tracking-wider transition-colors"
-                  >
-                    <ArrowLeft className="w-4 h-4" /> Back
-                  </button>
-                  <button
-                    onClick={() => setStep(3)}
-                    className="flex items-center gap-2 bg-[#1D1A16] hover:bg-[#C8A96A] text-white px-7 py-3 rounded-full font-bold text-xs uppercase tracking-widest transition-colors shadow-lg"
-                  >
-                    Continue <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
+                {purpose === "agency" && (
+                  <AgencyForm
+                    onBack={() => setStep(1)}
+                    onSuccess={handlePhase2Success}
+                    formData={intentData}
+                  />
+                )}
+                {purpose === "client" && (
+                  <ClientForm
+                    onBack={() => setStep(1)}
+                    onSuccess={handlePhase2Success}
+                    formData={intentData}
+                  />
+                )}
+                {purpose === "event_organizer" && (
+                  <EventOrganizerForm
+                    onBack={() => setStep(1)}
+                    onSuccess={handlePhase2Success}
+                    formData={intentData}
+                  />
+                )}
+                {purpose === "photographer" && (
+                  <PhotographerForm
+                    onBack={() => setStep(1)}
+                    onSuccess={handlePhase2Success}
+                    formData={intentData}
+                  />
+                )}
+                {purpose === "designer" && (
+                  <DesignerForm
+                    onBack={() => setStep(1)}
+                    onSuccess={handlePhase2Success}
+                    formData={intentData}
+                  />
+                )}
+                {purpose === "studio" && (
+                  <StudioForm
+                    onBack={() => setStep(1)}
+                    onSuccess={handlePhase2Success}
+                    formData={intentData}
+                  />
+                )}
+                {purpose === "makeup_artist" && (
+                  <MakeupArtistForm
+                    onBack={() => setStep(1)}
+                    onSuccess={handlePhase2Success}
+                    formData={intentData}
+                  />
+                )}
+                {purpose === "fashion_stylist" && (
+                  <FashionStylistForm
+                    onBack={() => setStep(1)}
+                    onSuccess={handlePhase2Success}
+                    formData={intentData}
+                  />
+                )}
+                {purpose === "hair_stylist" && (
+                  <HairStylistForm
+                    onBack={() => setStep(1)}
+                    onSuccess={handlePhase2Success}
+                    formData={intentData}
+                  />
+                )}
+                {purpose === "videographer" && (
+                  <VideographerForm
+                    onBack={() => setStep(1)}
+                    onSuccess={handlePhase2Success}
+                    formData={intentData}
+                  />
+                )}
               </motion.div>
             )}
 
@@ -343,7 +352,9 @@ export default function OnboardingPage() {
                   <CheckCircle2 className="w-16 h-16 text-[#C8A96A] mx-auto mb-5" />
                 </motion.div>
 
-                <h2 className="font-serif text-2xl font-bold mb-3 uppercase">You&apos;re all set!</h2>
+                <h2 className="font-serif text-2xl font-bold mb-3 uppercase">
+                  {purpose === "agency" ? "Profile Submitted for Review" : "You're all set!"}
+                </h2>
 
                 {selectedRole && (
                   <div className="inline-flex items-center gap-2 bg-[#F8F5EF] border border-[#E7DED1] rounded-full px-5 py-2 mb-4">
@@ -352,9 +363,16 @@ export default function OnboardingPage() {
                   </div>
                 )}
 
-                <p className="text-sm text-[#6B6257] mb-8 leading-relaxed max-w-sm mx-auto">
-                  Your profile will be set up as a <strong className="text-[#1D1A16]">{selectedRole?.title}</strong>. You&apos;ll be taken to your personalized dashboard now.
-                </p>
+                {purpose === "agency" ? (
+                  <p className="text-sm text-[#6B6257] mb-8 leading-relaxed max-w-sm mx-auto">
+                    Your agency profile has been submitted for review as a <strong className="text-[#1D1A16]">Model Agency</strong>.
+                    An administrator will review your details. While your profile is under review, you can view your dashboard but cannot post castings or submit models until approved.
+                  </p>
+                ) : (
+                  <p className="text-sm text-[#6B6257] mb-8 leading-relaxed max-w-sm mx-auto">
+                    Your profile will be set up as a <strong className="text-[#1D1A16]">{selectedRole?.title}</strong>. You'll be taken to your dashboard now.
+                  </p>
+                )}
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <button

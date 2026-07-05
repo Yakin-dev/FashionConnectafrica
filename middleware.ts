@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-const PUBLIC_PATHS = ["/", "/models", "/castings", "/marketplace", "/about", "/contact", "/privacy", "/terms", "/search", "/pricing"]
+const PUBLIC_PATHS = ["/", "/models", "/castings", "/marketplace", "/about", "/contact", "/privacy", "/terms", "/search", "/pricing", "/upgrade"]
 const PUBLIC_PREFIXES = [
   "/models/",
   "/castings/",
