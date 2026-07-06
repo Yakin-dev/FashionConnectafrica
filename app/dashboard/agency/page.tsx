@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
@@ -79,7 +79,7 @@ const VERIFICATION_BADGE: Record<string, { label: string; color: string; icon: R
   },
 };
 
-export default function AgencyDashboard() {
+function AgencyDashboardInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -542,5 +542,13 @@ export default function AgencyDashboard() {
         </div>
       )}
     </>
+  );
+}
+
+export default function AgencyDashboard() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-[#F8F5EF]"><Loader2 className="h-8 w-8 animate-spin text-[#C8A96A]" /></div>}>
+      <AgencyDashboardInner />
+    </Suspense>
   );
 }
