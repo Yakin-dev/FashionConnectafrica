@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { canCreateModelProfile } from "@/lib/plan-limits"
 
 const createSchema = z.object({
   name: z.string().min(2, "Full legal name is required."),
@@ -77,30 +78,68 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ models })
   } catch (error) {
-    console.error("[models GET]", error)
-    return NextResponse.json({ error: "Failed" }, { status: 500 })
+    console.error("[GET /api/models] failed", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
+    return NextResponse.json({
+      error: "Unable to load models right now.",
+      code: "MODELS_LOAD_FAILED",
+    }, { status: 500 })
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const currentUser = await getCurrentUser()
-    if (!currentUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!currentUser) {
+      return NextResponse.json({ error: "Authentication required." }, { status: 401 })
+    }
 
     const poster = await prisma.user.findUnique({
       where: { id: currentUser.id },
       include: { agency: true },
     })
 
-    if (!poster) return NextResponse.json({ error: "User not found" }, { status: 404 })
+    if (!poster) return NextResponse.json({ error: "User not found." }, { status: 404 })
 
     // Only agencies can create model profiles
-    if (poster.role !== "AGENCY" || !poster.agency) {
+    if (poster.role !== "AGENCY") {
       return NextResponse.json({ error: "Only agencies can create model profiles." }, { status: 403 })
     }
 
+    if (!poster.agency) {
+      return NextResponse.json({
+        error: "Agency profile not found. Complete agency onboarding first.",
+      }, { status: 404 })
+    }
+
     const body = await req.json()
-    const data = createSchema.parse(body)
+
+    const result = createSchema.safeParse(body)
+    if (!result.success) {
+      const fieldErrors: Record<string, string[]> = {}
+      for (const issue of result.error.issues) {
+        const path = issue.path.join(".")
+        if (!fieldErrors[path]) fieldErrors[path] = []
+        fieldErrors[path].push(issue.message)
+      }
+      return NextResponse.json({
+        error: "Please complete all required model profile fields.",
+        fieldErrors,
+      }, { status: 400 })
+    }
+    const data = result.data
+
+    // Check plan limit for model creation
+    const planCheck = await canCreateModelProfile(poster.agency.id, poster.id)
+    if (!planCheck.allowed) {
+      return NextResponse.json({
+        error: planCheck.reason || "Your current plan does not allow creating more model profiles.",
+        code: "MODEL_LIMIT_REACHED",
+        upgradeUrl: "/upgrade?reason=model_profile_limit",
+      }, { status: 403 })
+    }
 
     // Check agency verification status for publishing
     if (data.profileStatus === "PUBLISHED" && poster.agency.verificationStatus !== "APPROVED") {
@@ -115,7 +154,7 @@ export async function POST(req: NextRequest) {
     if (data.email) {
       const existingUser = await prisma.user.findUnique({ where: { email: modelEmail } });
       if (existingUser) {
-        return NextResponse.json({ error: "A user with this email already exists" }, { status: 409 });
+        return NextResponse.json({ error: "A user with this email already exists." }, { status: 409 });
       }
     }
 
@@ -189,10 +228,25 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ model }, { status: 201 })
   } catch (error) {
-    console.error("[models POST]", error)
+    console.error("[POST /api/models] failed", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
+      const fieldErrors: Record<string, string[]> = {}
+      for (const issue of error.issues) {
+        const path = issue.path.join(".")
+        if (!fieldErrors[path]) fieldErrors[path] = []
+        fieldErrors[path].push(issue.message)
+      }
+      return NextResponse.json({
+        error: "Please complete all required model profile fields.",
+        fieldErrors,
+      }, { status: 400 })
     }
-    return NextResponse.json({ error: "Failed to create model profile" }, { status: 500 })
+    return NextResponse.json({
+      error: "Unable to create the model profile right now.",
+      code: "MODEL_CREATE_FAILED",
+    }, { status: 500 })
   }
 }

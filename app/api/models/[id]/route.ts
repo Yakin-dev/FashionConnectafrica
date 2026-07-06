@@ -68,11 +68,17 @@ export async function GET(
         },
       },
     })
-    if (!model) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    if (!model) return NextResponse.json({ error: "Model profile not found." }, { status: 404 })
     return NextResponse.json({ model })
   } catch (error) {
-    console.error("[models/[id] GET]", error)
-    return NextResponse.json({ error: "Failed" }, { status: 500 })
+    console.error("[GET /api/models/:id] failed", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
+    return NextResponse.json({
+      error: "Unable to load model profile right now.",
+      code: "MODEL_LOAD_FAILED",
+    }, { status: 500 })
   }
 }
 
@@ -88,7 +94,7 @@ export async function PATCH(
       where: { id: currentUser.id },
       include: { model: true, agency: true },
     })
-    if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    if (!user) return NextResponse.json({ error: "User not found." }, { status: 404 })
 
     const { id } = await params
 
@@ -97,7 +103,7 @@ export async function PATCH(
     const isAdmin = user.role === "ADMIN"
 
     if (!isOwner && !isAgency && !isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      return NextResponse.json({ error: "You do not have permission to update this model profile." }, { status: 403 })
     }
 
     const body = await req.json()
@@ -133,10 +139,25 @@ export async function PATCH(
 
     return NextResponse.json({ model })
   } catch (error) {
-    console.error("[models/[id] PATCH]", error)
+    console.error("[PATCH /api/models/:id] failed", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
+      const fieldErrors: Record<string, string[]> = {}
+      for (const issue of error.issues) {
+        const path = issue.path.join(".")
+        if (!fieldErrors[path]) fieldErrors[path] = []
+        fieldErrors[path].push(issue.message)
+      }
+      return NextResponse.json({
+        error: "Please fix the invalid fields.",
+        fieldErrors,
+      }, { status: 400 })
     }
-    return NextResponse.json({ error: "Failed" }, { status: 500 })
+    return NextResponse.json({
+      error: "Unable to update the model profile right now.",
+      code: "MODEL_UPDATE_FAILED",
+    }, { status: 500 })
   }
 }

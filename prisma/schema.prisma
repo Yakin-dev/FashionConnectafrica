@@ -498,6 +498,8 @@ enum SubscriptionPlan {
   PRO_ANNUAL
   ULTIMATE_MONTHLY
   ULTIMATE_ANNUAL
+  MARKETPLACE_MONTHLY
+  MARKETPLACE_ANNUAL
 }
 
 enum SubscriptionStatus {

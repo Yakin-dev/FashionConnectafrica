@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 export async function GET() {
   try {
     const currentUser = await getCurrentUser()
-    if (!currentUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!currentUser) return NextResponse.json({ error: "Authentication required." }, { status: 401 })
 
     const user = await prisma.user.findUnique({
       where: { id: currentUser.id },
@@ -28,7 +28,7 @@ export async function GET() {
       },
     })
 
-    if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    if (!user) return NextResponse.json({ error: "User not found." }, { status: 404 })
 
     return NextResponse.json({
       user: { id: user.id, name: user.name, email: user.email, role: user.role, status: user.status, avatarUrl: user.avatarUrl },
@@ -39,7 +39,13 @@ export async function GET() {
       client: user.client,
     })
   } catch (error) {
-    console.error("[user/me]", error)
-    return NextResponse.json({ error: "Failed" }, { status: 500 })
+    console.error("[GET /api/user/me] failed", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
+    return NextResponse.json({
+      error: "Unable to load profile data right now.",
+      code: "USER_PROFILE_LOAD_FAILED",
+    }, { status: 500 })
   }
 }

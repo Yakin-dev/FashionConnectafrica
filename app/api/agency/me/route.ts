@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 export async function GET() {
   try {
     const currentUser = await getCurrentUser()
-    if (!currentUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!currentUser) return NextResponse.json({ error: "Authentication required." }, { status: 401 })
 
     const user = await prisma.user.findUnique({
       where: { id: currentUser.id },
@@ -16,11 +16,22 @@ export async function GET() {
       },
     })
 
-    if (!user?.agency) return NextResponse.json({ error: "Agency not found" }, { status: 404 })
+    if (!user) return NextResponse.json({ error: "User not found." }, { status: 404 })
+    if (!user?.agency) {
+      return NextResponse.json({
+        error: "Agency profile not found. Complete agency onboarding first.",
+      }, { status: 404 })
+    }
 
     return NextResponse.json({ agency: user.agency })
   } catch (error) {
-    console.error("[agency/me]", error)
-    return NextResponse.json({ error: "Failed" }, { status: 500 })
+    console.error("[GET /api/agency/me] failed", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
+    return NextResponse.json({
+      error: "Unable to load agency profile right now.",
+      code: "AGENCY_LOAD_FAILED",
+    }, { status: 500 })
   }
 }
