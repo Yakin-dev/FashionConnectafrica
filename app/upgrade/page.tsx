@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle2, Loader2, Sparkles, AlertCircle, ArrowRight, ArrowLeft, Shield, Crown, Copy, Check, Smartphone, X, Banknote } from "lucide-react"
+import { CheckCircle2, Loader2, Sparkles, AlertCircle, ArrowRight, ArrowLeft, Shield, Crown, Copy, Check, Smartphone, X, Banknote, Upload } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 
 const PLANS = {
@@ -101,6 +101,9 @@ function UpgradePageInner() {
   const [submitting, setSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  // Screenshot upload
+  const [screenshotUrl, setScreenshotUrl] = useState("")
+  const [screenshotUploading, setScreenshotUploading] = useState(false)
 
   const reason = searchParams.get("reason")
   const reasonMessages: Record<string, string> = {
@@ -134,6 +137,31 @@ function UpgradePageInner() {
     setSubmitSuccess(false)
     setSubmitError(null)
     setShowPaymentForm(false)
+    setScreenshotUrl("")
+  }
+
+  const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setSubmitError("Only JPEG, PNG, WebP images are allowed")
+      return
+    }
+    setScreenshotUploading(true)
+    setSubmitError(null)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const res = await fetch("/api/upload", { method: "POST", body: formData })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Upload failed")
+      setScreenshotUrl(data.url)
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Screenshot upload failed")
+    } finally {
+      setScreenshotUploading(false)
+    }
   }
 
   async function handleSubmitPayment() {
@@ -151,6 +179,7 @@ function UpgradePageInner() {
           senderPhone,
           transactionId: transactionId || undefined,
           amountPaid: Number(amountPaid),
+          screenshotUrl: screenshotUrl || undefined,
           notes: notes || undefined,
         }),
       })
@@ -502,6 +531,47 @@ function UpgradePageInner() {
                     onChange={(e) => setAmountPaid(e.target.value)}
                     className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 px-4 py-2.5 text-xs text-[#1D1A16] focus:outline-none focus:border-[#C8A96A] focus:bg-white transition-colors"
                   />
+                </div>
+
+                {/* Screenshot Upload */}
+                <div>
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1.5">Payment Screenshot (optional)</label>
+                  <div className="border-2 border-dashed border-[#E7DED1] rounded-xl p-4 text-center hover:border-[#C8A96A] transition-colors">
+                    {screenshotUrl ? (
+                      <div className="space-y-2">
+                        <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-[#F8F5EF] border border-[#E7DED1]">
+                          <img src={screenshotUrl} alt="Payment screenshot" className="object-contain w-full h-full" />
+                        </div>
+                        <button
+                          onClick={() => setScreenshotUrl("")}
+                          className="text-[9px] text-rose-600 font-bold uppercase tracking-widest hover:underline"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="cursor-pointer flex flex-col items-center gap-2">
+                        {screenshotUploading ? (
+                          <Loader2 className="h-8 w-8 animate-spin text-[#C8A96A]" />
+                        ) : (
+                          <>
+                            <Upload className="h-6 w-6 text-[#C8A96A]" />
+                            <span className="text-[10px] font-bold text-[#6B6257] uppercase tracking-wider">
+                              Upload screenshot
+                            </span>
+                            <span className="text-[8px] text-[#9B9189]">JPEG, PNG, WebP</span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={handleScreenshotUpload}
+                          className="hidden"
+                          disabled={screenshotUploading}
+                        />
+                      </label>
+                    )}
+                  </div>
                 </div>
 
                 <div>
