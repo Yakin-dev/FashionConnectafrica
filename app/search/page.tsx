@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import ModelCard from "@/components/model-card";
+import AgencyCard, { type AgencyCardData } from "@/components/agency-card";
 import EmptyState from "@/components/empty-state";
 import { mockModels } from "@/lib/mock-data";
-import { SlidersHorizontal, Search, X } from "lucide-react";
+import { SlidersHorizontal, Search, X, Loader2, Building2 } from "lucide-react";
 
 interface SidebarContentProps {
   selectedGender: string;
@@ -24,6 +26,21 @@ interface SidebarContentProps {
 
 const locations = ["All", "Kigali, Rwanda"];
 const categories = ["All", "Runway", "Editorial", "Fitness", "Beauty", "Commercial", "Influencer"];
+
+// Inner component that uses useSearchParams — wrapped in Suspense by parent
+function SearchContent() {
+  const searchParams = useSearchParams();
+  const typeParam = searchParams.get("type");
+  const initialQuery = searchParams.get("q") ?? "";
+
+  const showAgencies = typeParam === "agencies";
+
+  if (showAgencies) {
+    return <AgenciesView initialQuery={initialQuery} />;
+  }
+
+  return <ModelsView initialQuery={initialQuery} />;
+}
 
 const SidebarContent = ({
   selectedGender,
@@ -129,9 +146,91 @@ const SidebarContent = ({
   </div>
 );
 
-export default function SearchPage() {
+function AgenciesView({ initialQuery }: { initialQuery: string }) {
+  const [agencies, setAgencies] = useState<AgencyCardData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+
+  useEffect(() => {
+    const fetchAgencies = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        params.set("limit", "50");
+        if (searchQuery) params.set("q", searchQuery);
+        const res = await fetch(`/api/agencies?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          setAgencies(data.agencies ?? []);
+        }
+      } catch {
+        /* silent */
+      } finally {
+        setLoading(false);
+      }
+    };
+    void fetchAgencies();
+  }, [searchQuery]);
+
+  return (
+    <>
+      <Navbar />
+      <main className="flex-1 bg-[#F8F5EF] py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="mb-10 text-center">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#C8A96A]/10 border border-[#C8A96A]/30 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[#C8A96A] mb-4">
+              <Building2 className="h-3.5 w-3.5" /> Kigali Agencies
+            </span>
+            <h1 className="font-serif text-3xl sm:text-4xl font-bold uppercase text-[#1D1A16]">
+              Partner Agencies
+            </h1>
+            <p className="text-sm text-[#6B6257] mt-2">
+              Browse verified modeling and talent agencies in Kigali.
+            </p>
+          </div>
+
+          {/* Search bar */}
+          <div className="max-w-md mx-auto mb-10">
+            <div className="relative">
+              <Search className="absolute left-4 top-3.5 h-4.5 w-4.5 text-[#6B6257]" />
+              <input
+                type="text"
+                placeholder="Search agencies by name or location..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white border border-[#E7DED1] rounded-xl py-3 pl-12 pr-4 text-xs font-semibold text-[#1D1A16] placeholder-[#6B6257] focus:outline-none focus:ring-1 focus:ring-[#C8A96A]"
+              />
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center gap-3 py-24 text-[#6B6257]">
+              <Loader2 className="h-5 w-5 animate-spin text-[#C8A96A]" />
+              <span className="text-sm">Loading agencies...</span>
+            </div>
+          ) : agencies.length === 0 ? (
+            <EmptyState
+              title="No agencies found"
+              description="There are currently no verified agencies listed. Check back soon or adjust your search."
+            />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {agencies.map((agency) => (
+                <AgencyCard key={agency.id} agency={agency} />
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+      <Footer />
+    </>
+  );
+}
+
+function ModelsView({ initialQuery }: { initialQuery: string }) {
   // State variables for search and filtering
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedGender, setSelectedGender] = useState<string>("All");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedLocation, setSelectedLocation] = useState<string>("All");
@@ -317,5 +416,26 @@ export default function SearchPage() {
 
       <Footer />
     </>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <>
+        <Navbar />
+        <main className="flex-1 bg-[#F8F5EF] py-12">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-center py-24 text-[#6B6257]">
+              <Loader2 className="h-5 w-5 animate-spin text-[#C8A96A] mr-2" />
+              <span className="text-sm">Loading...</span>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    }>
+      <SearchContent />
+    </Suspense>
   );
 }

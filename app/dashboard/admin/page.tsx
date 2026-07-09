@@ -10,7 +10,9 @@ import StatCard from "@/components/stat-card";
 import EmptyState from "@/components/empty-state";
 import {
   Users, Shield, BookOpen, UserCheck,
-  AlertCircle, Loader2, CheckCircle, XCircle
+  AlertCircle, Loader2, CheckCircle, XCircle, Trash2,
+  Mail, Search, CreditCard, CalendarDays,
+  Ban,
 } from "lucide-react";
 
 interface Agency {
@@ -18,23 +20,59 @@ interface Agency {
   user: { name: string; email: string; createdAt: string };
   _count: { models: number; castings: number };
 }
-interface DBUser { id: string; name: string; email: string; role: string; status: string; createdAt: string }
+interface ExtendedUser {
+  id: string; name: string; email: string; role: string; status: string;
+  username: string | null; avatarUrl: string | null;
+  onboardingCompleted: boolean; createdAt: string; updatedAt: string;
+  profile: { location: string | null; phoneNumber: string | null; bio: string | null } | null;
+  model: {
+    id: string; professionalName: string | null; category: string;
+    categories: string[]; profileStatus: string; isAvailable: boolean;
+    height: number; experienceLevel: string | null; location: string | null;
+    agency: { name: string } | null;
+  } | null;
+  agency: {
+    id: string; name: string; location: string; isVerified: boolean;
+    verificationStatus: string; pilotStatus: string; modelCount: string | null;
+    _count: { models: number; castings: number };
+  } | null;
+  client: { company: string | null; purpose: string | null; location: string | null } | null;
+  businessProfile: { role: string; businessName: string | null; verificationStatus: string; city: string | null } | null;
+  marketplaceProvider: { businessName: string; serviceCategory: string; location: string } | null;
+  subscription: {
+    plan: string; status: string; amount: number; currency: string;
+    currentPeriodStart: string | null; currentPeriodEnd: string | null; createdAt: string;
+  } | null;
+  _count: { sentMessages: number; notifications: number; contactMessages: number };
+}
 interface DBCasting { id: string; title: string; location: string; isActive: boolean; _count: { applications: number } }
 interface ContactMsg { id: string; name: string; email: string; role: string; subject: string; createdAt: string }
-interface SubscriptionInfo {
-  id: string; plan: string; status: string; amount: number; currency: string;
-  currentPeriodEnd: string | null; createdAt: string;
-  user: { name: string; email: string; id: string };
-}
 
 export default function AdminDashboard() {
-  const [agencies, setAgencies]     = useState<Agency[]>([]);
-  const [users, setUsers]           = useState<DBUser[]>([]);
-  const [castings, setCastings]     = useState<DBCasting[]>([]);
-  const [contacts, setContacts]     = useState<ContactMsg[]>([]);
-  const [subscriptions, setSubscriptions] = useState<SubscriptionInfo[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [agencies, setAgencies]               = useState<Agency[]>([]);
+  const [users, setUsers]                     = useState<ExtendedUser[]>([]);
+  const [castings, setCastings]               = useState<DBCasting[]>([]);
+  const [contacts, setContacts]               = useState<ContactMsg[]>([]);
+  const [loading, setLoading]                 = useState(true);
+  const [actionLoading, setActionLoading]      = useState<string | null>(null);
+  const [searchQuery, setSearchQuery]          = useState("");
+  const [roleFilter, setRoleFilter]            = useState("ALL");
+  const [statusFilter, setStatusFilter]        = useState("ALL");
+
+  // Delete state
+  const [deleteConfirm, setDeleteConfirm]     = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading]     = useState(false);
+
+  // Email modal state
+  const [emailModalUser, setEmailModalUser]   = useState<ExtendedUser | null>(null);
+  const [emailSubject, setEmailSubject]       = useState("");
+  const [emailMessage, setEmailMessage]       = useState("");
+  const [emailSending, setEmailSending]       = useState(false);
+  const [emailSuccess, setEmailSuccess]       = useState(false);
+
+  // Toast
+  const [toast, setToast]                     = useState<string | null>(null);
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   const sidebarItems = [
     { name: "Platform Admin", href: "/dashboard/admin", icon: Shield },
@@ -43,18 +81,16 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      const [agenciesRes, usersRes, castingsRes, contactsRes, subsRes] = await Promise.all([
+      const [agenciesRes, usersRes, castingsRes, contactsRes] = await Promise.all([
         fetch("/api/admin/agencies"),
         fetch("/api/admin/users"),
         fetch("/api/castings?limit=10"),
         fetch("/api/contact"),
-        fetch("/api/admin/subscriptions"),
       ]);
       if (agenciesRes.ok)  { const d = await agenciesRes.json();  setAgencies(d.agencies ?? []); }
       if (usersRes.ok)     { const d = await usersRes.json();     setUsers(d.users ?? []); }
       if (castingsRes.ok)  { const d = await castingsRes.json();  setCastings(d.castings ?? []); }
       if (contactsRes.ok)  { const d = await contactsRes.json();  setContacts(d.messages ?? []); }
-      if (subsRes.ok)      { const d = await subsRes.json();      setSubscriptions(d.subscriptions ?? []); }
     } catch { /* silent */ } finally { setLoading(false); }
   };
 
@@ -74,8 +110,105 @@ export default function AdminDashboard() {
     } catch { /* silent */ } finally { setActionLoading(null); }
   };
 
+  // Delete handler
+  const handleDeleteUser = async (userId: string) => {
+    setDeleteLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
+      if (res.ok) {
+        showToast("User deleted successfully");
+        fetchData();
+      } else {
+        const d = await res.json();
+        showToast(d.error || "Failed to delete user");
+      }
+    } catch {
+      showToast("Failed to delete user");
+    } finally {
+      setDeleteLoading(false);
+      setDeleteConfirm(null);
+    }
+  };
+
+  // Email handler
+  const handleSendEmail = async () => {
+    if (!emailModalUser || !emailSubject || !emailMessage) return;
+    setEmailSending(true);
+    setEmailSuccess(false);
+    try {
+      const res = await fetch(`/api/admin/users/${emailModalUser.id}/send-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject: emailSubject, message: emailMessage }),
+      });
+      if (res.ok) {
+        setEmailSuccess(true);
+        showToast(`Email sent to ${emailModalUser.email}`);
+        setTimeout(() => { setEmailModalUser(null); setEmailSubject(""); setEmailMessage(""); setEmailSuccess(false); }, 1500);
+      } else {
+        const d = await res.json();
+        showToast(d.error || "Failed to send email");
+      }
+    } catch {
+      showToast("Failed to send email");
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
+  const openEmailModal = (user: ExtendedUser) => {
+    setEmailModalUser(user);
+    setEmailSubject(`Upgrade Your FashionConnect.Africa Subscription`);
+    setEmailMessage(
+`Hi ${user.name},
+
+We noticed your current subscription is ${user.subscription?.plan?.replace(/_/g, " ") || "Free"}.
+
+Upgrading your plan unlocks premium features including:
+• Expanded portfolio capacity
+• Priority listing visibility
+• Advanced analytics
+• Priority support
+
+Visit your dashboard to explore available plans.
+
+Best,
+FashionConnect.Africa Team`
+    );
+    setEmailSuccess(false);
+  };
+
   const pendingAgencies = agencies.filter((a) => a.pilotStatus === "PENDING");
   const totalApplications = castings.reduce((s, c) => s + (c._count?.applications ?? 0), 0);
+
+  // Filter users
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch = !searchQuery ||
+      u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.username?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = roleFilter === "ALL" || u.role === roleFilter;
+    const matchesStatus = statusFilter === "ALL" || u.status === statusFilter;
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
+  const subscriptionStats = {
+    active: users.filter((u) => u.subscription?.status === "ACTIVE").length,
+    expired: users.filter((u) => u.subscription?.status === "EXPIRED").length,
+    free: users.filter((u) => !u.subscription || u.subscription.status !== "ACTIVE").length,
+  };
+
+  const roleColors: Record<string, string> = {
+    ADMIN: "bg-purple-100 text-purple-700",
+    AGENCY: "bg-blue-100 text-blue-700",
+    MODEL: "bg-emerald-100 text-emerald-700",
+    CLIENT: "bg-amber-100 text-amber-700",
+    MARKETPLACE_PROVIDER: "bg-pink-100 text-pink-700",
+    MAKEUP_ARTIST: "bg-rose-100 text-rose-700",
+    FASHION_STYLIST: "bg-indigo-100 text-indigo-700",
+    HAIR_STYLIST: "bg-orange-100 text-orange-700",
+    VIDEOGRAPHER: "bg-cyan-100 text-cyan-700",
+  };
 
   return (
     <>
@@ -93,12 +226,35 @@ export default function AdminDashboard() {
                   <Loader2 className="h-4 w-4 animate-spin" /> Loading admin data...
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
-                  <StatCard title="Total Users"     value={users.length}          change="REGISTERED"    icon={Users} />
-                  <StatCard title="Total Agencies"  value={agencies.length}       change="ALL STATUSES"  icon={Shield} />
-                  <StatCard title="Castings"        value={castings.length}       change="POSTED"        icon={BookOpen} />
-                  <StatCard title="Applications"    value={totalApplications}     change="RECEIVED"      icon={UserCheck} />
-                </div>
+                <>
+                  {/* Stats Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                    <StatCard title="Total Users"     value={users.length}           change="REGISTERED"   icon={Users} />
+                    <StatCard title="Total Agencies"  value={agencies.length}        change="ALL STATUSES" icon={Shield} />
+                    <StatCard title="Castings"        value={castings.length}        change="POSTED"       icon={BookOpen} />
+                    <StatCard title="Applications"    value={totalApplications}      change="RECEIVED"     icon={UserCheck} />
+                    <StatCard title="Active Subs"     value={subscriptionStats.active}  change={`${subscriptionStats.free} FREE`} icon={CreditCard} />
+                  </div>
+
+                  {/* Subscription Overview Bar */}
+                  <div className="rounded-2xl border border-[#E7DED1] bg-white p-4 shadow-sm flex flex-wrap items-center gap-4 text-xs">
+                    <span className="font-bold uppercase tracking-widest text-[#1D1A16] flex items-center gap-1.5">
+                      <CreditCard className="h-3.5 w-3.5 text-[#C8A96A]" /> Subscription Overview
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      <span className="text-[#6B6257]">{subscriptionStats.active} Active</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-red-400" />
+                      <span className="text-[#6B6257]">{subscriptionStats.expired} Expired</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-gray-300" />
+                      <span className="text-[#6B6257]">{subscriptionStats.free} Free / No Plan</span>
+                    </span>
+                  </div>
+                </>
               )}
 
               {/* Pending agency requests */}
@@ -147,77 +303,164 @@ export default function AdminDashboard() {
                 )}
               </div>
 
-              {/* Latest users */}
+              {/* All Users Management */}
               <div className="rounded-2xl border border-[#E7DED1] bg-white p-6 shadow-sm space-y-4">
-                <h3 className="font-serif text-lg font-bold uppercase tracking-widest text-[#1D1A16] border-b border-[#E7DED1]/70 pb-3 flex items-center gap-2">
-                  <Users className="h-4 w-4 text-[#C8A96A]" /> Latest Users
-                </h3>
-                {users.length === 0 ? (
-                  <EmptyState title="No users yet" description="Users will appear here once they sign up." />
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse text-xs">
-                      <thead>
-                        <tr className="border-b border-[#E7DED1] text-[9px] uppercase font-bold tracking-widest text-[#6B6257]">
-                          <th className="pb-3">Name</th><th className="pb-3">Email</th>
-                          <th className="pb-3">Role</th><th className="pb-3">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#E7DED1]/50">
-                        {users.slice(0, 10).map((u) => (
-                          <tr key={u.id}>
-                            <td className="py-3 font-bold text-[#1D1A16]">{u.name}</td>
-                            <td className="py-3 text-[#6B6257]">{u.email}</td>
-                            <td className="py-3"><span className="bg-[#C8A96A]/10 text-[#8B6914] px-2 py-0.5 rounded-full text-[9px] font-bold uppercase">{u.role}</span></td>
-                            <td className="py-3"><span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${u.status === "ACTIVE" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{u.status}</span></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#E7DED1]/70 pb-4">
+                  <h3 className="font-serif text-lg font-bold uppercase tracking-widest text-[#1D1A16] flex items-center gap-2">
+                    <Users className="h-4 w-4 text-[#C8A96A]" />
+                    All Users ({filteredUsers.length})
+                  </h3>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    {/* Search */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#6B6257]" />
+                      <input
+                        type="text"
+                        placeholder="Search users..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-40 lg:w-56 rounded-lg border border-[#E7DED1] bg-[#F8F5EF]/50 py-2 pl-9 pr-3 text-[10px] font-semibold text-[#1D1A16] placeholder-[#6B6257] focus:outline-none focus:ring-1 focus:ring-[#C8A96A]"
+                      />
+                    </div>
+                    {/* Role filter */}
+                    <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}
+                      className="rounded-lg border border-[#E7DED1] bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[#6B6257] focus:outline-none">
+                      <option value="ALL">All Roles</option>
+                      <option value="ADMIN">Admin</option>
+                      <option value="AGENCY">Agency</option>
+                      <option value="MODEL">Model</option>
+                      <option value="CLIENT">Client</option>
+                      <option value="MARKETPLACE_PROVIDER">Marketplace</option>
+                      <option value="MAKEUP_ARTIST">Makeup Artist</option>
+                      <option value="FASHION_STYLIST">Fashion Stylist</option>
+                      <option value="HAIR_STYLIST">Hair Stylist</option>
+                      <option value="VIDEOGRAPHER">Videographer</option>
+                    </select>
+                    {/* Status filter */}
+                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+                      className="rounded-lg border border-[#E7DED1] bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[#6B6257] focus:outline-none">
+                      <option value="ALL">All Statuses</option>
+                      <option value="ACTIVE">Active</option>
+                      <option value="PENDING">Pending</option>
+                      <option value="SUSPENDED">Suspended</option>
+                      <option value="REJECTED">Rejected</option>
+                    </select>
                   </div>
-                )}
-              </div>
+                </div>
 
-              {/* Subscription Management */}
-              <div className="rounded-2xl border border-[#E7DED1] bg-white p-6 shadow-sm space-y-4">
-                <h3 className="font-serif text-lg font-bold uppercase tracking-widest text-[#1D1A16] border-b border-[#E7DED1]/70 pb-3 flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-[#C8A96A]" /> Active Subscriptions ({subscriptions.filter(s => s.status === "ACTIVE").length})
-                </h3>
-                {subscriptions.length === 0 ? (
-                  <EmptyState title="No subscriptions yet" description="Subscriptions will appear here once users upgrade." />
+                {filteredUsers.length === 0 ? (
+                  <EmptyState title="No users found" description="No users match your search or filter criteria." />
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
                         <tr className="border-b border-[#E7DED1] text-[9px] uppercase font-bold tracking-widest text-[#6B6257]">
-                          <th className="pb-3 pr-3">User</th><th className="pb-3 pr-3">Plan</th>
-                          <th className="pb-3 pr-3">Status</th><th className="pb-3 pr-3">Amount</th>
-                          <th className="pb-3">Expires</th>
+                          <th className="pb-3 pr-3">User</th>
+                          <th className="pb-3 pr-3">Role</th>
+                          <th className="pb-3 pr-3">Status</th>
+                          <th className="pb-3 pr-3">Subscription</th>
+                          <th className="pb-3 pr-3">Plan Ends</th>
+                          <th className="pb-3 pr-3">Joined</th>
+                          <th className="pb-3 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#E7DED1]/50">
-                        {subscriptions.slice(0, 20).map((s) => (
-                          <tr key={s.id}>
-                            <td className="py-3 pr-3">
-                              <span className="font-bold text-[#1D1A16]">{s.user?.name || "Unknown"}</span>
-                              <span className="block text-[#6B6257] text-[9px]">{s.user?.email}</span>
-                            </td>
-                            <td className="py-3 pr-3">
-                              <span className="bg-[#C8A96A]/10 text-[#8B6914] px-2 py-0.5 rounded-full text-[9px] font-bold uppercase">
-                                {s.plan?.replace(/_/g, " ") || "FREE"}
-                              </span>
-                            </td>
-                            <td className="py-3 pr-3">
-                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${s.status === "ACTIVE" ? "bg-emerald-100 text-emerald-700" : s.status === "EXPIRED" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"}`}>
-                                {s.status}
-                              </span>
-                            </td>
-                            <td className="py-3 pr-3 text-[#6B6257]">{s.amount?.toLocaleString()} {s.currency}</td>
-                            <td className="py-3 text-[#6B6257] text-[10px]">
-                              {s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString() : "—"}
-                            </td>
-                          </tr>
-                        ))}
+                        {filteredUsers.map((u) => {
+                          const sub = u.subscription;
+                          const isActiveSub = sub?.status === "ACTIVE";
+                          const planEnd = sub?.currentPeriodEnd ? new Date(sub.currentPeriodEnd) : null;
+                          const daysLeft = planEnd ? Math.ceil((planEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                          const isExpiringSoon = daysLeft !== null && daysLeft <= 7 && daysLeft > 0;
+
+                          // Get secondary info
+                          const secondaryInfo =
+                            u.agency?.name ||
+                            u.businessProfile?.businessName ||
+                            u.marketplaceProvider?.businessName ||
+                            u.model?.professionalName ||
+                            u.client?.company ||
+                            "";
+
+                          return (
+                            <tr key={u.id} className="hover:bg-[#F8F5EF]/50 transition-colors">
+                              <td className="py-3 pr-3">
+                                <div>
+                                  <span className="font-bold text-[#1D1A16] block">{u.name}</span>
+                                  <span className="text-[9px] text-[#6B6257]">{u.email}</span>
+                                  {secondaryInfo && (
+                                    <span className="text-[9px] text-[#C8A96A] block">{secondaryInfo}</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-3 pr-3">
+                                <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${roleColors[u.role] || "bg-gray-100 text-gray-700"}`}>
+                                  {u.role.replace(/_/g, " ")}
+                                </span>
+                              </td>
+                              <td className="py-3 pr-3">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                                  u.status === "ACTIVE" ? "bg-emerald-100 text-emerald-700" :
+                                  u.status === "PENDING" ? "bg-amber-100 text-amber-700" :
+                                  u.status === "SUSPENDED" ? "bg-red-100 text-red-700" :
+                                  "bg-gray-100 text-gray-700"
+                                }`}>
+                                  {u.status === "SUSPENDED" && <Ban className="h-2.5 w-2.5" />}
+                                  {u.status}
+                                </span>
+                              </td>
+                              <td className="py-3 pr-3">
+                                {sub ? (
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                                    isActiveSub ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                                  }`}>
+                                    {isActiveSub ? <CheckCircle className="h-2.5 w-2.5" /> : <XCircle className="h-2.5 w-2.5" />}
+                                    {sub.plan?.replace(/_/g, " ") || "FREE"}
+                                  </span>
+                                ) : (
+                                  <span className="text-[#6B6257] text-[9px]">—</span>
+                                )}
+                              </td>
+                              <td className="py-3 pr-3">
+                                {planEnd ? (
+                                  <span className={`text-[10px] flex items-center gap-1 ${
+                                    isExpiringSoon ? "text-amber-600 font-bold" :
+                                    daysLeft && daysLeft <= 0 ? "text-red-600 font-bold" :
+                                    "text-[#6B6257]"
+                                  }`}>
+                                    <CalendarDays className="h-3 w-3" />
+                                    {daysLeft && daysLeft <= 0 ? "Expired" : planEnd.toLocaleDateString()}
+                                    {isExpiringSoon && <span className="text-[8px]">({daysLeft}d left)</span>}
+                                  </span>
+                                ) : (
+                                  <span className="text-[#6B6257] text-[9px]">—</span>
+                                )}
+                              </td>
+                              <td className="py-3 pr-3 text-[10px] text-[#6B6257]">
+                                {new Date(u.createdAt).toLocaleDateString()}
+                              </td>
+                              <td className="py-3 text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  {/* Send Email */}
+                                  <button
+                                    onClick={() => openEmailModal(u)}
+                                    className="rounded-lg p-1.5 hover:bg-[#F8F5EF] text-[#6B6257] hover:text-[#C8A96A] transition-colors"
+                                    title="Send email reminder"
+                                  >
+                                    <Mail className="h-3.5 w-3.5" />
+                                  </button>
+                                  {/* Delete User */}
+                                  <button
+                                    onClick={() => setDeleteConfirm(u.id)}
+                                    className="rounded-lg p-1.5 hover:bg-[#F8F5EF] text-[#6B6257] hover:text-rose-600 transition-colors"
+                                    title="Delete user"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -250,6 +493,125 @@ export default function AdminDashboard() {
         </div>
       </main>
       <Footer />
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm bg-white rounded-2xl border border-[#E7DED1] p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-rose-100 flex items-center justify-center">
+                <Trash2 className="h-5 w-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="font-serif text-base font-bold uppercase text-[#1D1A16]">Delete User?</h3>
+                <p className="text-xs text-[#6B6257]">This action cannot be undone.</p>
+              </div>
+            </div>
+            <p className="text-xs text-[#6B6257] leading-relaxed">
+              This will permanently delete the user and all associated data including their profile, models, castings, messages, and subscription records.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="rounded-full border border-[#E7DED1] px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-[#6B6257] hover:bg-[#F8F5EF] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteUser(deleteConfirm)}
+                disabled={deleteLoading}
+                className="rounded-full bg-rose-600 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-rose-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+              >
+                {deleteLoading && <Loader2 className="h-3 w-3 animate-spin" />}
+                Delete User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send Email Modal */}
+      {emailModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg bg-white rounded-2xl border border-[#E7DED1] p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-[#C8A96A]/10 flex items-center justify-center">
+                  <Mail className="h-5 w-5 text-[#C8A96A]" />
+                </div>
+                <div>
+                  <h3 className="font-serif text-base font-bold uppercase text-[#1D1A16]">Send Email</h3>
+                  <p className="text-[10px] text-[#6B6257]">To: {emailModalUser.email}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setEmailModalUser(null); setEmailSubject(""); setEmailMessage(""); setEmailSuccess(false); }}
+                className="rounded-full p-1.5 hover:bg-[#F8F5EF] text-[#6B6257]"
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+
+            {emailSuccess ? (
+              <div className="flex flex-col items-center py-8 text-emerald-600">
+                <CheckCircle className="h-10 w-10 mb-2" />
+                <p className="text-sm font-bold uppercase tracking-widest">Email Sent!</p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1">Subject</label>
+                    <input
+                      type="text"
+                      value={emailSubject}
+                      onChange={(e) => setEmailSubject(e.target.value)}
+                      className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 p-3 text-xs font-semibold text-[#1D1A16] focus:outline-none focus:ring-1 focus:ring-[#C8A96A]"
+                      placeholder="Email subject..."
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1">Message</label>
+                    <textarea
+                      value={emailMessage}
+                      onChange={(e) => setEmailMessage(e.target.value)}
+                      rows={8}
+                      className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 p-3 text-xs font-semibold text-[#1D1A16] focus:outline-none focus:ring-1 focus:ring-[#C8A96A] resize-none"
+                      placeholder="Write your message..."
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 justify-end pt-2">
+                  <button
+                    onClick={() => { setEmailModalUser(null); setEmailSubject(""); setEmailMessage(""); setEmailSuccess(false); }}
+                    className="rounded-full border border-[#E7DED1] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-[#6B6257] hover:bg-[#F8F5EF] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSendEmail}
+                    disabled={emailSending || !emailSubject || !emailMessage}
+                    className="rounded-full bg-[#1D1A16] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-colors disabled:opacity-50 flex items-center gap-1"
+                  >
+                    {emailSending && <Loader2 className="h-3 w-3 animate-spin" />}
+                    {emailSending ? "Sending..." : "Send Email"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Toast notification */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <div className="bg-[#1D1A16] text-white rounded-full px-5 py-2.5 shadow-2xl text-[10px] font-bold uppercase tracking-widest">
+            {toast}
+          </div>
+        </div>
+      )}
     </>
   );
 }

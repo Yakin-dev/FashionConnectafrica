@@ -63,10 +63,22 @@ export async function checkSubscriptionExpiry(userId: string): Promise<{
       data: { status: "EXPIRED" },
     })
 
+    // If the user is an agency, disable their public listing — requires admin re-review
+    const agency = await prisma.agency.findUnique({ where: { userId } })
+    if (agency) {
+      await prisma.agency.update({
+        where: { userId },
+        data: {
+          isVerified: false,
+          verificationStatus: "PENDING_REVIEW",
+        },
+      })
+    }
+
     await createAndDeliverNotification({
       userId,
       title: "Plan Expired",
-      message: "Your subscription has expired. Your account has been downgraded to Free limits. Renew to restore premium features.",
+      message: "Your subscription has expired. Your account has been downgraded to Free limits, and your agency listing has been removed from public view. Renew and contact admin to restore visibility.",
       type: "SYSTEM",
       actionUrl: "/upgrade",
     })
