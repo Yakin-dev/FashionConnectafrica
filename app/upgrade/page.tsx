@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle2, Loader2, Sparkles, AlertCircle, ArrowRight, Shield, Crown, Copy, Check, Smartphone, X, Upload, Banknote } from "lucide-react"
+import { CheckCircle2, Loader2, Sparkles, AlertCircle, ArrowRight, ArrowLeft, Shield, Crown, Copy, Check, Smartphone, X, Banknote } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 
 const PLANS = {
@@ -92,6 +92,7 @@ function UpgradePageInner() {
 
   // Payment modal state
   const [paymentModal, setPaymentModal] = useState<{ plan: PlanKey; tierName: string } | null>(null)
+  const [showPaymentForm, setShowPaymentForm] = useState(false)
   const [senderName, setSenderName] = useState("")
   const [senderPhone, setSenderPhone] = useState("")
   const [transactionId, setTransactionId] = useState("")
@@ -132,6 +133,7 @@ function UpgradePageInner() {
     setNotes("")
     setSubmitSuccess(false)
     setSubmitError(null)
+    setShowPaymentForm(false)
   }
 
   async function handleSubmitPayment() {
@@ -375,168 +377,201 @@ function UpgradePageInner() {
         </div>
       </section>
 
-      {/* Payment Confirmation Modal */}
+      {/* Payment Confirmation Modal — Step 1: Show payment card */}
       <AnimatePresence>
-        {paymentModal && (
+        {paymentModal && !showPaymentForm && !submitSuccess && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg bg-white rounded-3xl border border-[#E7DED1] shadow-2xl overflow-hidden"
+              className="w-full max-w-sm mx-auto bg-white rounded-3xl border border-[#E7DED1] shadow-2xl overflow-hidden"
             >
-              {submitSuccess ? (
-                <div className="p-8 text-center">
-                  <motion.div
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: "spring", stiffness: 200, damping: 18 }}
+              <div className="bg-[#1D1A16] p-5 text-center relative">
+                <button
+                  onClick={() => { setPaymentModal(null); setShowPaymentForm(false); setSubmitError(null); }}
+                  className="absolute top-3 right-3 rounded-full p-1 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                <Smartphone className="h-8 w-8 text-[#C8A96A] mx-auto mb-1" />
+                <h3 className="font-bold text-sm uppercase tracking-widest text-white">MTN Mobile Money</h3>
+                <p className="text-[10px] text-white/50 mt-0.5">{paymentModal.tierName} Plan</p>
+              </div>
+
+              <div className="p-6 space-y-5">
+                {/* Payment Card Body */}
+                <div className="bg-[#F8F5EF] rounded-2xl border border-[#E7DED1] p-5 space-y-4">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257]">Send To</p>
+                      <p className="text-xs font-bold text-[#1D1A16] mt-0.5">0790305483</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257]">Account</p>
+                      <p className="text-xs font-bold text-[#1D1A16] mt-0.5">UNITY FASHION MANAGEMENT Ltd</p>
+                    </div>
+                    <div className="flex justify-between items-center border-t border-[#E7DED1] pt-3">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257]">Amount</p>
+                      <p className="font-bold text-sm text-[#1D1A16]">{formatRWF(PLAN_DETAILS[paymentModal.plan].amount)}</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={copyNumber}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#E7DED1] bg-white py-2.5 text-[10px] font-bold uppercase tracking-widest text-[#C8A96A] hover:bg-[#F8F5EF] transition-colors"
                   >
-                    <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
-                  </motion.div>
-                  <h3 className="font-serif text-xl font-bold uppercase text-[#1D1A16] mb-2">Payment Submitted!</h3>
-                  <p className="text-sm text-[#6B6257] mb-6">
-                    Your {paymentModal.tierName} subscription payment has been submitted for verification.
-                    You will be notified once an administrator approves it.
-                  </p>
-                  <div className="flex gap-3 justify-center">
-                    <button
-                      onClick={() => { setPaymentModal(null); setSubmitSuccess(false); }}
-                      className="rounded-full border border-[#E7DED1] px-6 py-2.5 text-[10px] font-bold uppercase tracking-widest text-[#6B6257] hover:bg-[#F8F5EF] transition-colors"
-                    >
-                      Close
-                    </button>
-                    <Link
-                      href="/payments"
-                      className="rounded-full bg-[#1D1A16] px-6 py-2.5 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-colors"
-                    >
-                      View Status
-                    </Link>
-                  </div>
+                    {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copied ? "Number Copied" : "Copy Number"}
+                  </button>
                 </div>
-              ) : (
-                <>
-                  {/* Header */}
-                  <div className="bg-[#1D1A16] text-white p-6 text-center">
-                    <Smartphone className="h-8 w-8 text-[#C8A96A] mx-auto mb-2" />
-                    <h3 className="font-serif text-lg font-bold uppercase tracking-widest">MTN Mobile Money</h3>
-                    <p className="text-xs text-white/60 mt-1">{paymentModal.tierName} Plan</p>
-                  </div>
 
-                  {/* Payment Card */}
-                  <div className="p-6 space-y-5">
-                    {/* Send To Details */}
-                    <div className="bg-[#F8F5EF] rounded-2xl border border-[#E7DED1] p-5 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257]">Send To</span>
-                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">MTN MoMo</span>
-                      </div>
-                      <div className="flex items-center justify-between bg-white rounded-xl border border-[#E7DED1] p-3">
-                        <div>
-                          <span className="text-lg font-bold text-[#1D1A16]">0790305483</span>
-                          <p className="text-[10px] text-[#6B6257]">UNITY FASHION MANAGEMENT Ltd</p>
-                        </div>
-                        <button
-                          onClick={copyNumber}
-                          className="flex items-center gap-1 rounded-lg bg-[#F8F5EF] px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[#C8A96A] hover:bg-[#E7DED1] transition-colors"
-                        >
-                          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                          {copied ? "Copied" : "Copy"}
-                        </button>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-[#6B6257]">Amount to Pay</span>
-                        <span className="font-bold text-[#1D1A16]">{formatRWF(PLAN_DETAILS[paymentModal.plan].amount)}</span>
-                      </div>
-                    </div>
+                <button
+                  onClick={() => setShowPaymentForm(true)}
+                  className="w-full rounded-full bg-[#1D1A16] py-3.5 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-colors flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  I've Made the Payment
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
-                    {/* Confirmation Form */}
-                    <div className="space-y-4">
-                      <h4 className="text-xs font-bold uppercase tracking-widest text-[#1D1A16] flex items-center gap-2">
-                        <Upload className="h-3.5 w-3.5 text-[#C8A96A]" />
-                        I've Made the Payment
-                      </h4>
+      {/* Payment Confirmation Modal — Step 2: Show form after user clicks "I've Made the Payment" */}
+      <AnimatePresence>
+        {paymentModal && showPaymentForm && !submitSuccess && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-sm mx-auto bg-white rounded-3xl border border-[#E7DED1] shadow-2xl overflow-auto max-h-[90vh]"
+            >
+              <div className="bg-[#1D1A16] p-4 text-center relative">
+                <button
+                  onClick={() => setShowPaymentForm(false)}
+                  className="absolute top-3 left-3 rounded-full p-1 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+                <h3 className="font-bold text-xs uppercase tracking-widest text-white">Confirm Payment</h3>
+                <p className="text-[9px] text-white/50 mt-0.5">{paymentModal.tierName} — {formatRWF(PLAN_DETAILS[paymentModal.plan].amount)}</p>
+              </div>
 
-                      <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1">Sender Name *</label>
-                        <input
-                          type="text"
-                          value={senderName}
-                          onChange={(e) => setSenderName(e.target.value)}
-                          className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 p-3 text-xs font-semibold text-[#1D1A16] focus:outline-none focus:ring-1 focus:ring-[#C8A96A]"
-                          placeholder="Your full name"
-                        />
-                      </div>
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1.5">Sender Name *</label>
+                  <input
+                    type="text"
+                    value={senderName}
+                    onChange={(e) => setSenderName(e.target.value)}
+                    className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 px-4 py-2.5 text-xs text-[#1D1A16] focus:outline-none focus:border-[#C8A96A] focus:bg-white transition-colors"
+                    placeholder="Your full name"
+                  />
+                </div>
 
-                      <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1">Phone Number Used *</label>
-                        <input
-                          type="tel"
-                          value={senderPhone}
-                          onChange={(e) => setSenderPhone(e.target.value)}
-                          className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 p-3 text-xs font-semibold text-[#1D1A16] focus:outline-none focus:ring-1 focus:ring-[#C8A96A]"
-                          placeholder="0790305483"
-                        />
-                      </div>
+                <div>
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1.5">Phone Number Used *</label>
+                  <input
+                    type="tel"
+                    value={senderPhone}
+                    onChange={(e) => setSenderPhone(e.target.value)}
+                    className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 px-4 py-2.5 text-xs text-[#1D1A16] focus:outline-none focus:border-[#C8A96A] focus:bg-white transition-colors"
+                    placeholder="0790305483"
+                  />
+                </div>
 
-                      <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1">Transaction ID (optional)</label>
-                        <input
-                          type="text"
-                          value={transactionId}
-                          onChange={(e) => setTransactionId(e.target.value)}
-                          className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 p-3 text-xs font-semibold text-[#1D1A16] focus:outline-none focus:ring-1 focus:ring-[#C8A96A]"
-                          placeholder="MTN MoMo reference number"
-                        />
-                      </div>
+                <div>
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1.5">Transaction ID (optional)</label>
+                  <input
+                    type="text"
+                    value={transactionId}
+                    onChange={(e) => setTransactionId(e.target.value)}
+                    className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 px-4 py-2.5 text-xs text-[#1D1A16] focus:outline-none focus:border-[#C8A96A] focus:bg-white transition-colors"
+                    placeholder="MTN MoMo reference"
+                  />
+                </div>
 
-                      <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1">Amount Paid *</label>
-                        <input
-                          type="number"
-                          value={amountPaid}
-                          onChange={(e) => setAmountPaid(e.target.value)}
-                          className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 p-3 text-xs font-semibold text-[#1D1A16] focus:outline-none focus:ring-1 focus:ring-[#C8A96A]"
-                        />
-                      </div>
+                <div>
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1.5">Amount Paid *</label>
+                  <input
+                    type="number"
+                    value={amountPaid}
+                    onChange={(e) => setAmountPaid(e.target.value)}
+                    className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 px-4 py-2.5 text-xs text-[#1D1A16] focus:outline-none focus:border-[#C8A96A] focus:bg-white transition-colors"
+                  />
+                </div>
 
-                      <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1">Notes (optional)</label>
-                        <textarea
-                          value={notes}
-                          onChange={(e) => setNotes(e.target.value)}
-                          rows={2}
-                          className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 p-3 text-xs font-semibold text-[#1D1A16] focus:outline-none focus:ring-1 focus:ring-[#C8A96A] resize-none"
-                          placeholder="Any additional information..."
-                        />
-                      </div>
-                    </div>
+                <div>
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1.5">Notes (optional)</label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={2}
+                    className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 px-4 py-2.5 text-xs text-[#1D1A16] focus:outline-none focus:border-[#C8A96A] focus:bg-white transition-colors resize-none"
+                    placeholder="Any additional info..."
+                  />
+                </div>
 
-                    {submitError && (
-                      <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-600">
-                        {submitError}
-                      </div>
-                    )}
+                {submitError && (
+                  <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-[10px] text-red-600">{submitError}</div>
+                )}
 
-                    <div className="flex gap-3 justify-end pt-2">
-                      <button
-                        onClick={() => { setPaymentModal(null); setSubmitSuccess(false); setSubmitError(null); }}
-                        className="rounded-full border border-[#E7DED1] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-[#6B6257] hover:bg-[#F8F5EF] transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleSubmitPayment}
-                        disabled={submitting || !senderName || !senderPhone || !amountPaid}
-                        className="rounded-full bg-[#1D1A16] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-colors disabled:opacity-50 flex items-center gap-1"
-                      >
-                        {submitting && <Loader2 className="h-3 w-3 animate-spin" />}
-                        {submitting ? "Submitting..." : "Confirm Payment"}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={() => setShowPaymentForm(false)}
+                    className="flex-1 rounded-full border border-[#E7DED1] py-2.5 text-[9px] font-bold uppercase tracking-widest text-[#6B6257] hover:bg-[#F8F5EF] transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleSubmitPayment}
+                    disabled={submitting || !senderName || !senderPhone || !amountPaid}
+                    className="flex-1 rounded-full bg-[#1D1A16] py-2.5 text-[9px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
+                  >
+                    {submitting && <Loader2 className="h-3 w-3 animate-spin" />}
+                    {submitting ? "Sending..." : "Submit Payment"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Payment Success Modal */}
+      <AnimatePresence>
+        {submitSuccess && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-sm mx-auto bg-white rounded-3xl border border-[#E7DED1] shadow-2xl overflow-hidden p-8 text-center"
+            >
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 200, damping: 18 }}
+              >
+                <CheckCircle2 className="w-14 h-14 text-emerald-500 mx-auto mb-4" />
+              </motion.div>
+              <h3 className="font-serif text-lg font-bold uppercase text-[#1D1A16] mb-2">Payment Submitted!</h3>
+              <p className="text-xs text-[#6B6257] mb-6 leading-relaxed">
+                Your {paymentModal?.tierName} subscription payment is pending verification.
+                We'll notify you once approved.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Link
+                  href="/payments"
+                  onClick={() => { setPaymentModal(null); setShowPaymentForm(false); setSubmitSuccess(false); }}
+                  className="rounded-full bg-[#1D1A16] px-6 py-2.5 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-colors"
+                >
+                  Track Status
+                </Link>
+              </div>
             </motion.div>
           </div>
         )}
