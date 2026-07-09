@@ -98,6 +98,7 @@ model User {
   contactMessages     ContactMessage[]
   marketplaceProvider MarketplaceProvider?
   subscription Subscription?
+  manualPayments ManualPayment[]
   sessions Session[]
 }
 
@@ -527,4 +528,43 @@ model Subscription {
 
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
+}
+
+enum ManualPaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ManualPayment {
+  id              String              @id @default(uuid())
+  userId          String
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Payment details
+  plan            SubscriptionPlan
+  amount          Float
+  currency        String              @default("RWF")
+  receiverNumber  String              @default("0790305483")
+  accountName     String              @default("FashionConnect Africa Ltd")
+
+  // Sender info
+  senderName      String
+  senderPhone     String
+  transactionId   String?
+  amountPaid      Float
+  screenshotUrl   String?
+  notes           String?
+
+  // Status
+  status          ManualPaymentStatus @default(PENDING)
+  adminNote       String?
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }

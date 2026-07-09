@@ -4,8 +4,8 @@ import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { motion } from "framer-motion"
-import { CheckCircle2, Loader2, Sparkles, Smartphone, AlertCircle, ArrowRight, Shield, Crown } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { CheckCircle2, Loader2, Sparkles, AlertCircle, ArrowRight, Shield, Crown, Copy, Check, Smartphone, X, Upload, Banknote } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 
 const PLANS = {
@@ -45,7 +45,7 @@ const PLANS = {
       "Pro badge",
       "Standard support",
     ],
-    cta: "Upgrade to Pro",
+    cta: "Subscribe with MTN MoMo",
     featured: false,
   },
   ULTIMATE: {
@@ -67,18 +67,39 @@ const PLANS = {
       "Priority support",
       "Eligibility for homepage spotlight",
     ],
-    cta: "Upgrade to Ultimate",
+    cta: "Subscribe with MTN MoMo",
     featured: true,
   },
 } as const
 
+type PlanKey = "pro_monthly" | "pro_annual" | "ultimate_monthly" | "ultimate_annual"
+
+const PLAN_DETAILS: Record<PlanKey, { label: string; amount: number; tier: string }> = {
+  pro_monthly: { label: "Pro Monthly", amount: 15000, tier: "PRO" },
+  pro_annual: { label: "Pro Annual", amount: 171000, tier: "PRO" },
+  ultimate_monthly: { label: "Ultimate Monthly", amount: 30000, tier: "ULTIMATE" },
+  ultimate_annual: { label: "Ultimate Annual", amount: 342000, tier: "ULTIMATE" },
+}
+
 function UpgradePageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const [annual, setAnnual] = useState(false)
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  // Payment modal state
+  const [paymentModal, setPaymentModal] = useState<{ plan: PlanKey; tierName: string } | null>(null)
+  const [senderName, setSenderName] = useState("")
+  const [senderPhone, setSenderPhone] = useState("")
+  const [transactionId, setTransactionId] = useState("")
+  const [amountPaid, setAmountPaid] = useState("")
+  const [notes, setNotes] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const reason = searchParams.get("reason")
   const reasonMessages: Record<string, string> = {
@@ -88,39 +109,62 @@ function UpgradePageInner() {
   }
   const contextualMessage = reason ? reasonMessages[reason] : null
 
+  const copyNumber = () => {
+    navigator.clipboard.writeText("0790305483")
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2500)
+  }
+
   function formatRWF(amount: number) {
     return `RWF ${amount.toLocaleString("en-RW")}`
   }
 
-  async function handleSubscribe(planId: string) {
-    if (!user) {
-      router.push(`/login?callbackUrl=/upgrade${reason ? `?reason=${reason}` : ""}`)
-      return
-    }
+  function openPaymentModal(tierName: string, isAnnual: boolean) {
+    const planKey: PlanKey = isAnnual
+      ? (tierName === "Pro" ? "pro_annual" : "ultimate_annual")
+      : (tierName === "Pro" ? "pro_monthly" : "ultimate_monthly")
 
-    setLoading(planId)
-    setError(null)
+    setPaymentModal({ plan: planKey, tierName })
+    setSenderName(user?.name || "")
+    setSenderPhone("")
+    setTransactionId("")
+    setAmountPaid(String(PLAN_DETAILS[planKey].amount))
+    setNotes("")
+    setSubmitSuccess(false)
+    setSubmitError(null)
+  }
+
+  async function handleSubmitPayment() {
+    if (!paymentModal) return
+    setSubmitting(true)
+    setSubmitError(null)
 
     try {
-      const res = await fetch("/api/payments/create", {
+      const res = await fetch("/api/payments/manual", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planId }),
+        body: JSON.stringify({
+          plan: paymentModal.plan,
+          senderName,
+          senderPhone,
+          transactionId: transactionId || undefined,
+          amountPaid: Number(amountPaid),
+          notes: notes || undefined,
+        }),
       })
 
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error ?? "Something went wrong")
-        setLoading(null)
+        setSubmitError(data.error || "Failed to submit payment")
+        setSubmitting(false)
         return
       }
 
-      if (data.url) {
-        window.location.href = data.url
-      }
+      setSubmitSuccess(true)
+      setSubmitting(false)
     } catch {
-      setError("Failed to start subscription. Please try again.")
-      setLoading(null)
+      setSubmitError("Network error. Please try again.")
+      setSubmitting(false)
     }
   }
 
@@ -156,11 +200,10 @@ function UpgradePageInner() {
             Grow Your Fashion<br /><span className="text-[#C8A96A]">Business Presence</span>
           </h1>
           <p className="text-sm text-[#6B6257] max-w-xl mx-auto leading-relaxed">
-            Choose a plan that fits your business. All plans include a professional profile.
-            Upgrade anytime to unlock more features.
+            Choose a plan that fits your business. Pay securely via MTN Mobile Money.
+            Your subscription will be activated after manual verification.
           </p>
 
-          {/* Contextual message */}
           {contextualMessage && (
             <div className="mt-6 max-w-lg mx-auto rounded-xl bg-amber-50 border border-amber-200 p-4 text-xs text-amber-800 text-left flex items-start gap-2">
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
@@ -168,7 +211,6 @@ function UpgradePageInner() {
             </div>
           )}
 
-          {/* Important note */}
           <div className="mt-4 max-w-lg mx-auto rounded-xl bg-[#F8F5EF] border border-[#E7DED1] p-3 text-[10px] text-[#6B6257] text-left flex items-start gap-2">
             <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#C8A96A]" />
             Featured visibility helps your business appear more prominently to potential clients and partners. It does not guarantee bookings, selections, contracts, or income.
@@ -246,19 +288,15 @@ function UpgradePageInner() {
                 ))}
               </ul>
               <button
-                onClick={() => handleSubscribe(annual ? "pro_annual" : "pro_monthly")}
-                disabled={loading !== null}
-                className="w-full rounded-full bg-[#1D1A16] py-3.5 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                onClick={() => openPaymentModal("Pro", annual)}
+                className="w-full rounded-full bg-[#1D1A16] py-3.5 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-all flex items-center justify-center gap-2"
               >
-                {loading === (annual ? "pro_annual" : "pro_monthly") ? (
-                  <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Processing...</>
-                ) : (
-                  <>{annual ? "Subscribe Annual" : "Subscribe Monthly"} <ArrowRight className="h-3.5 w-3.5" /></>
-                )}
+                <Smartphone className="h-3.5 w-3.5" />
+                {annual ? "Subscribe Annual" : "Subscribe Monthly"}
               </button>
               <div className="flex items-center gap-2 mt-3 text-[9px] text-[#6B6257] justify-center">
                 <Smartphone className="h-3 w-3 text-[#C8A96A]" />
-                MTN MoMo · Card
+                MTN MoMo Only
               </div>
             </div>
 
@@ -291,28 +329,218 @@ function UpgradePageInner() {
                 ))}
               </ul>
               <button
-                onClick={() => handleSubscribe(annual ? "ultimate_annual" : "ultimate_monthly")}
-                disabled={loading !== null}
-                className="w-full rounded-full bg-[#C8A96A] py-3.5 text-[10px] font-bold uppercase tracking-widest text-[#11100E] hover:bg-[#BCA062] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                onClick={() => openPaymentModal("Ultimate", annual)}
+                className="w-full rounded-full bg-[#C8A96A] py-3.5 text-[10px] font-bold uppercase tracking-widest text-[#11100E] hover:bg-[#BCA062] transition-all flex items-center justify-center gap-2"
               >
-                {loading === (annual ? "ultimate_annual" : "ultimate_monthly") ? (
-                  <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Processing...</>
-                ) : (
-                  <>{annual ? "Subscribe Annual" : "Subscribe Monthly"} <ArrowRight className="h-3.5 w-3.5" /></>
-                )}
+                <Smartphone className="h-3.5 w-3.5" />
+                {annual ? "Subscribe Annual" : "Subscribe Monthly"}
               </button>
               <div className="flex items-center gap-2 mt-3 text-[9px] text-[#6B6257] justify-center">
                 <Smartphone className="h-3 w-3 text-[#C8A96A]" />
-                MTN MoMo · Card
+                MTN MoMo Only
               </div>
             </div>
           </div>
 
+          {/* Payment Instructions */}
+          <div className="mt-12 max-w-xl mx-auto bg-white rounded-3xl border-2 border-[#E7DED1] p-8">
+            <div className="text-center mb-6">
+              <Banknote className="h-8 w-8 text-[#C8A96A] mx-auto mb-2" />
+              <h3 className="font-serif text-lg font-bold uppercase tracking-widest text-[#1D1A16]">How to Pay</h3>
+              <p className="text-xs text-[#6B6257] mt-1">Follow these steps to complete your subscription</p>
+            </div>
+            <ol className="space-y-3 text-sm text-[#6B6257]">
+              <li className="flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#1D1A16] text-white text-[11px] font-bold flex items-center justify-center shrink-0">1</span>
+                <span>Choose your plan above and click <strong className="text-[#1D1A16]">Subscribe with MTN MoMo</strong></span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#1D1A16] text-white text-[11px] font-bold flex items-center justify-center shrink-0">2</span>
+                <span>Send the exact amount to <strong className="text-[#1D1A16]">0790305483</strong> (UNITY FASHION MANAGEMENT Ltd) via MTN Mobile Money</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#1D1A16] text-white text-[11px] font-bold flex items-center justify-center shrink-0">3</span>
+                <span>Fill in the payment details form with your sender name, phone number, and transaction reference</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#1D1A16] text-white text-[11px] font-bold flex items-center justify-center shrink-0">4</span>
+                <span>Wait for admin verification — you'll be notified once your payment is approved</span>
+              </li>
+            </ol>
+          </div>
+
           <p className="text-center text-[10px] text-[#9B9189] mt-8 max-w-md mx-auto">
-            By subscribing, you agree to our <Link href="/terms" className="underline hover:text-[#C8A96A]">Terms of Service</Link> and <Link href="/privacy" className="underline hover:text-[#C8A96A]">Privacy Policy</Link>. You can cancel anytime.
+            By subscribing, you agree to our <Link href="/terms" className="underline hover:text-[#C8A96A]">Terms of Service</Link> and <Link href="/privacy" className="underline hover:text-[#C8A96A]">Privacy Policy</Link>.
           </p>
         </div>
       </section>
+
+      {/* Payment Confirmation Modal */}
+      <AnimatePresence>
+        {paymentModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-lg bg-white rounded-3xl border border-[#E7DED1] shadow-2xl overflow-hidden"
+            >
+              {submitSuccess ? (
+                <div className="p-8 text-center">
+                  <motion.div
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 200, damping: 18 }}
+                  >
+                    <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
+                  </motion.div>
+                  <h3 className="font-serif text-xl font-bold uppercase text-[#1D1A16] mb-2">Payment Submitted!</h3>
+                  <p className="text-sm text-[#6B6257] mb-6">
+                    Your {paymentModal.tierName} subscription payment has been submitted for verification.
+                    You will be notified once an administrator approves it.
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <button
+                      onClick={() => { setPaymentModal(null); setSubmitSuccess(false); }}
+                      className="rounded-full border border-[#E7DED1] px-6 py-2.5 text-[10px] font-bold uppercase tracking-widest text-[#6B6257] hover:bg-[#F8F5EF] transition-colors"
+                    >
+                      Close
+                    </button>
+                    <Link
+                      href="/payments"
+                      className="rounded-full bg-[#1D1A16] px-6 py-2.5 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-colors"
+                    >
+                      View Status
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Header */}
+                  <div className="bg-[#1D1A16] text-white p-6 text-center">
+                    <Smartphone className="h-8 w-8 text-[#C8A96A] mx-auto mb-2" />
+                    <h3 className="font-serif text-lg font-bold uppercase tracking-widest">MTN Mobile Money</h3>
+                    <p className="text-xs text-white/60 mt-1">{paymentModal.tierName} Plan</p>
+                  </div>
+
+                  {/* Payment Card */}
+                  <div className="p-6 space-y-5">
+                    {/* Send To Details */}
+                    <div className="bg-[#F8F5EF] rounded-2xl border border-[#E7DED1] p-5 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257]">Send To</span>
+                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">MTN MoMo</span>
+                      </div>
+                      <div className="flex items-center justify-between bg-white rounded-xl border border-[#E7DED1] p-3">
+                        <div>
+                          <span className="text-lg font-bold text-[#1D1A16]">0790305483</span>
+                          <p className="text-[10px] text-[#6B6257]">UNITY FASHION MANAGEMENT Ltd</p>
+                        </div>
+                        <button
+                          onClick={copyNumber}
+                          className="flex items-center gap-1 rounded-lg bg-[#F8F5EF] px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[#C8A96A] hover:bg-[#E7DED1] transition-colors"
+                        >
+                          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          {copied ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#6B6257]">Amount to Pay</span>
+                        <span className="font-bold text-[#1D1A16]">{formatRWF(PLAN_DETAILS[paymentModal.plan].amount)}</span>
+                      </div>
+                    </div>
+
+                    {/* Confirmation Form */}
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-[#1D1A16] flex items-center gap-2">
+                        <Upload className="h-3.5 w-3.5 text-[#C8A96A]" />
+                        I've Made the Payment
+                      </h4>
+
+                      <div>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1">Sender Name *</label>
+                        <input
+                          type="text"
+                          value={senderName}
+                          onChange={(e) => setSenderName(e.target.value)}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 p-3 text-xs font-semibold text-[#1D1A16] focus:outline-none focus:ring-1 focus:ring-[#C8A96A]"
+                          placeholder="Your full name"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1">Phone Number Used *</label>
+                        <input
+                          type="tel"
+                          value={senderPhone}
+                          onChange={(e) => setSenderPhone(e.target.value)}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 p-3 text-xs font-semibold text-[#1D1A16] focus:outline-none focus:ring-1 focus:ring-[#C8A96A]"
+                          placeholder="0790305483"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1">Transaction ID (optional)</label>
+                        <input
+                          type="text"
+                          value={transactionId}
+                          onChange={(e) => setTransactionId(e.target.value)}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 p-3 text-xs font-semibold text-[#1D1A16] focus:outline-none focus:ring-1 focus:ring-[#C8A96A]"
+                          placeholder="MTN MoMo reference number"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1">Amount Paid *</label>
+                        <input
+                          type="number"
+                          value={amountPaid}
+                          onChange={(e) => setAmountPaid(e.target.value)}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 p-3 text-xs font-semibold text-[#1D1A16] focus:outline-none focus:ring-1 focus:ring-[#C8A96A]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1">Notes (optional)</label>
+                        <textarea
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          rows={2}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 p-3 text-xs font-semibold text-[#1D1A16] focus:outline-none focus:ring-1 focus:ring-[#C8A96A] resize-none"
+                          placeholder="Any additional information..."
+                        />
+                      </div>
+                    </div>
+
+                    {submitError && (
+                      <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-600">
+                        {submitError}
+                      </div>
+                    )}
+
+                    <div className="flex gap-3 justify-end pt-2">
+                      <button
+                        onClick={() => { setPaymentModal(null); setSubmitSuccess(false); setSubmitError(null); }}
+                        className="rounded-full border border-[#E7DED1] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-[#6B6257] hover:bg-[#F8F5EF] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSubmitPayment}
+                        disabled={submitting || !senderName || !senderPhone || !amountPaid}
+                        className="rounded-full bg-[#1D1A16] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-colors disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {submitting && <Loader2 className="h-3 w-3 animate-spin" />}
+                        {submitting ? "Submitting..." : "Confirm Payment"}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </main>
   )
 }

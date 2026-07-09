@@ -47,6 +47,15 @@ interface ExtendedUser {
 }
 interface DBCasting { id: string; title: string; location: string; isActive: boolean; _count: { applications: number } }
 interface ContactMsg { id: string; name: string; email: string; role: string; subject: string; createdAt: string }
+interface AdminPayment {
+  id: string; status: "PENDING" | "APPROVED" | "REJECTED";
+  plan: string; amount: number; amountPaid: number;
+  senderName: string; senderPhone: string;
+  transactionId: string | null; adminNote: string | null;
+  screenshotUrl: string | null; notes: string | null;
+  createdAt: string; approvedAt: string | null; rejectedAt: string | null;
+  user: { id: string; name: string; email: string };
+}
 
 export default function AdminDashboard() {
   const [agencies, setAgencies]               = useState<Agency[]>([]);
@@ -62,6 +71,12 @@ export default function AdminDashboard() {
   // Delete state
   const [deleteConfirm, setDeleteConfirm]     = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading]     = useState(false);
+
+  // Payment management state
+  const [payments, setPayments]               = useState<AdminPayment[]>([]);
+  const [paymentActionLoading, setPaymentActionLoading] = useState<string | null>(null);
+  const [rejectModal, setRejectModal]         = useState<{ id: string; senderName: string } | null>(null);
+  const [rejectReason, setRejectReason]       = useState("");
 
   // Email modal state
   const [emailModalUser, setEmailModalUser]   = useState<ExtendedUser | null>(null);
@@ -81,22 +96,48 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      const [agenciesRes, usersRes, castingsRes, contactsRes] = await Promise.all([
+      const [agenciesRes, usersRes, castingsRes, contactsRes, paymentsRes] = await Promise.all([
         fetch("/api/admin/agencies"),
         fetch("/api/admin/users"),
         fetch("/api/castings?limit=10"),
         fetch("/api/contact"),
+        fetch("/api/admin/payments"),
       ]);
       if (agenciesRes.ok)  { const d = await agenciesRes.json();  setAgencies(d.agencies ?? []); }
       if (usersRes.ok)     { const d = await usersRes.json();     setUsers(d.users ?? []); }
       if (castingsRes.ok)  { const d = await castingsRes.json();  setCastings(d.castings ?? []); }
       if (contactsRes.ok)  { const d = await contactsRes.json();  setContacts(d.messages ?? []); }
+      if (paymentsRes.ok)  { const d = await paymentsRes.json();  setPayments(d.payments ?? []); }
     } catch { /* silent */ } finally { setLoading(false); }
   };
 
   useEffect(() => {
     void fetchData();
   }, []);
+
+  // Payment approve/reject handler
+  const handlePaymentAction = async (id: string, action: "approve" | "reject") => {
+    if (action === "reject" && !rejectReason) return;
+    setPaymentActionLoading(id + action);
+    try {
+      const res = await fetch(`/api/admin/payments/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, adminNote: action === "reject" ? rejectReason : undefined }),
+      });
+      if (res.ok) {
+        showToast(action === "approve" ? "Payment approved — subscription activated" : "Payment rejected");
+        fetchData();
+      } else {
+        const d = await res.json();
+        showToast(d.error || "Failed to update payment");
+      }
+    } catch { /* silent */ } finally {
+      setPaymentActionLoading(null);
+      setRejectModal(null);
+      setRejectReason("");
+    }
+  };
 
   const handleAgencyAction = async (id: string, action: "approve" | "reject" | "activate") => {
     setActionLoading(id + action);
@@ -299,6 +340,78 @@ FashionConnect.Africa Team`
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Pending Payments Section */}
+              <div className="rounded-2xl border border-[#E7DED1] bg-white p-6 shadow-sm space-y-4">
+                <h3 className="font-serif text-lg font-bold uppercase tracking-widest text-[#1D1A16] border-b border-[#E7DED1]/70 pb-3 flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-[#C8A96A]" />
+                  Manual Payment Approvals ({payments.filter(p => p.status === "PENDING").length} pending)
+                </h3>
+                {payments.length === 0 ? (
+                  <EmptyState title="No payments yet" description="Users will see their payment submissions here." />
+                ) : payments.filter(p => p.status === "PENDING").length === 0 ? (
+                  <div className="text-center py-6">
+                    <p className="text-xs text-[#6B6257]">All payments have been processed.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b border-[#E7DED1] text-[9px] uppercase font-bold tracking-widest text-[#6B6257]">
+                          <th className="pb-3 pr-3">User</th>
+                          <th className="pb-3 pr-3">Plan</th>
+                          <th className="pb-3 pr-3">Sender</th>
+                          <th className="pb-3 pr-3">Amount</th>
+                          <th className="pb-3 pr-3">Phone</th>
+                          <th className="pb-3 pr-3">Txn ID</th>
+                          <th className="pb-3 pr-3">Date</th>
+                          <th className="pb-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E7DED1]/50">
+                        {payments.filter(p => p.status === "PENDING").map((p) => (
+                          <tr key={p.id} className="hover:bg-[#F8F5EF]/50 transition-colors">
+                            <td className="py-3 pr-3">
+                              <span className="font-bold text-[#1D1A16] block">{p.user.name}</span>
+                              <span className="text-[9px] text-[#6B6257]">{p.user.email}</span>
+                            </td>
+                            <td className="py-3 pr-3">
+                              <span className="bg-[#C8A96A]/10 text-[#8B6914] px-2 py-0.5 rounded-full text-[9px] font-bold uppercase">
+                                {p.plan.replace(/_/g, " ")}
+                              </span>
+                            </td>
+                            <td className="py-3 pr-3 font-bold text-[#1D1A16]">{p.senderName}</td>
+                            <td className="py-3 pr-3 text-[#6B6257]">RWF {p.amountPaid.toLocaleString()}</td>
+                            <td className="py-3 pr-3 text-[#6B6257]">{p.senderPhone}</td>
+                            <td className="py-3 pr-3 text-[10px] text-[#6B6257]">{p.transactionId || "—"}</td>
+                            <td className="py-3 pr-3 text-[10px] text-[#6B6257]">{new Date(p.createdAt).toLocaleDateString()}</td>
+                            <td className="py-3 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  onClick={() => handlePaymentAction(p.id, "approve")}
+                                  disabled={!!paymentActionLoading}
+                                  className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
+                                  title="Approve payment"
+                                >
+                                  {paymentActionLoading === p.id + "approve" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                                </button>
+                                <button
+                                  onClick={() => setRejectModal({ id: p.id, senderName: p.senderName })}
+                                  disabled={!!paymentActionLoading}
+                                  className="rounded-lg p-1.5 text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                                  title="Reject payment"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
@@ -524,6 +637,49 @@ FashionConnect.Africa Team`
               >
                 {deleteLoading && <Loader2 className="h-3 w-3 animate-spin" />}
                 Delete User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Reject Modal */}
+      {rejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm bg-white rounded-2xl border border-[#E7DED1] p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-rose-100 flex items-center justify-center">
+                <XCircle className="h-5 w-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="font-serif text-base font-bold uppercase text-[#1D1A16]">Reject Payment</h3>
+                <p className="text-xs text-[#6B6257]">Payment from: {rejectModal.senderName}</p>
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-[#6B6257] block mb-1">Reason for Rejection *</label>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={3}
+                className="w-full rounded-xl border border-[#E7DED1] bg-[#F8F5EF]/50 p-3 text-xs font-semibold text-[#1D1A16] focus:outline-none focus:ring-1 focus:ring-[#C8A96A] resize-none"
+                placeholder="Explain why the payment is being rejected..."
+              />
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => { setRejectModal(null); setRejectReason(""); }}
+                className="rounded-full border border-[#E7DED1] px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-[#6B6257] hover:bg-[#F8F5EF] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handlePaymentAction(rejectModal.id, "reject")}
+                disabled={!rejectReason || !!paymentActionLoading}
+                className="rounded-full bg-rose-600 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-rose-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+              >
+                {paymentActionLoading === rejectModal.id + "reject" && <Loader2 className="h-3 w-3 animate-spin" />}
+                Reject Payment
               </button>
             </div>
           </div>

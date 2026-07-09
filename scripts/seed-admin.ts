@@ -23,9 +23,9 @@ async function main() {
     data: {
       email,
       username,
-      name: "Yakin Dev",
+      name: "Yakin",
       firstName: "Yakin",
-      lastName: "Dev",
+      lastName: "",
       password: hash,
       role: Role.ADMIN,
       status: UserStatus.ACTIVE,

@@ -2,7 +2,6 @@ import { getCurrentUser } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { Role, VerificationStatus } from "@prisma/client"
-import { getDashboardRouteForUser } from "@/lib/user-routing"
 import {
   agencySchema, clientSchema, eventOrganizerSchema,
   photographerSchema, designerSchema, studioSchema,
@@ -309,8 +308,8 @@ export async function POST(req: Request) {
       })
     }
 
-    const redirectUrl = getDashboardRouteForUser(user)
-    return NextResponse.json({ success: true, redirectUrl })
+    // Redirect to pricing page so user can choose a plan before accessing their dashboard
+    return NextResponse.json({ success: true, redirectUrl: "/upgrade" })
   } catch (error: any) {
     console.error("[api/onboarding]", error)
     return NextResponse.json({ error: error.message }, { status: 500 })
