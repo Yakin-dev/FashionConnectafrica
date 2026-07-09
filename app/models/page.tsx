@@ -74,7 +74,7 @@ export default function ModelsPage() {
     bio: "",
     portfolioImages: [],
     portfolioVideos: [],
-    reviews: m.reviews.map((r) => ({ id: "", authorName: "", rating: r.rating, comment: "", date: "" })),
+    reviews: (m.reviews || []).map((r) => ({ id: "", authorName: "", rating: r.rating, comment: "", date: "" })),
     experienceTimeline: [],
   }));
 
