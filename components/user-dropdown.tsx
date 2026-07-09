@@ -7,7 +7,6 @@ import Image from "next/image"
 import {
   User,
   LayoutDashboard,
-  Settings,
   LogOut,
   ChevronDown,
   Shield,
@@ -110,8 +109,7 @@ export function UserDropdown() {
           {/* Menu Items */}
           <nav className="py-2">
             <DropdownLink href={dashboardHref} icon={LayoutDashboard} label="Dashboard" onClick={() => setOpen(false)} />
-            <DropdownLink href="/settings/profile" icon={User} label="Profile Settings" onClick={() => setOpen(false)} />
-            <DropdownLink href="/settings/account" icon={Settings} label="Account Settings" onClick={() => setOpen(false)} />
+            <DropdownLink href="/settings" icon={User} label="Profile & Account Settings" onClick={() => setOpen(false)} />
           </nav>
 
           {/* Footer */}
