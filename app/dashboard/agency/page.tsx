@@ -15,7 +15,8 @@ import {
   Users, BookOpen, UserPlus, Eye, CheckCircle,
   Clock, AlertCircle, Loader2, ShieldCheck, XCircle,
   ArrowUpRight, Copy, Check, FileText, Lock, Pencil,
-  Archive, ArchiveRestore, MessageSquare,
+  Archive, ArchiveRestore, MessageSquare, X, Save,
+  ChevronDown, ChevronUp,
 } from "lucide-react";
 
 interface DBModel {
@@ -110,6 +111,15 @@ function AgencyDashboardInner() {
   const [archiveConfirm, setArchiveConfirm] = useState<string | null>(null);
   const [archiveLoading, setArchiveLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+
+  // Edit model modal state
+  const [editModelId, setEditModelId] = useState<string | null>(null);
+  const [editData, setEditData] = useState<any>(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSuccess, setEditSuccess] = useState<string | null>(null);
+  const [showMeasurements, setShowMeasurements] = useState(false);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -227,6 +237,127 @@ function AgencyDashboardInner() {
   const draftModels = dbModels.filter((m) => m.profileStatus === "DRAFT");
   const publishedModels = dbModels.filter((m) => m.profileStatus === "PUBLISHED");
   const hiddenModels = dbModels.filter((m) => m.profileStatus === "HIDDEN" || m.profileStatus === "ARCHIVED");
+
+  const openEditModal = async (modelId: string) => {
+    setEditModelId(modelId);
+    setEditLoading(true);
+    setEditError(null);
+    setEditSuccess(null);
+    try {
+      const res = await fetch(`/api/models/${modelId}`);
+      if (!res.ok) throw new Error("Failed to load model data");
+      const d = await res.json();
+      const m = d.model;
+      setEditData({
+        professionalName: m.professionalName || "",
+        bio: m.bio || m.user?.profile?.bio || "",
+        category: m.category || "",
+        categories: m.categories || [],
+        skills: m.skills || [],
+        languages: m.languages || [],
+        experienceLevel: m.experienceLevel || "",
+        notableCredits: m.notableCredits || "",
+        isAvailable: m.isAvailable ?? true,
+        location: m.location || m.user?.profile?.location || "",
+        height: m.height,
+        bustCm: m.bustCm || null,
+        chestCm: m.chestCm || null,
+        waistCm: m.waistCm || null,
+        hipsCm: m.hipsCm || null,
+        inseamCm: m.inseamCm || null,
+        shoeSize: m.shoeSize || null,
+        hairColor: m.hairColor || "",
+        eyeColor: m.eyeColor || "",
+        nationality: m.nationality || "",
+        travelAvailability: m.travelAvailability || "",
+        representationStatus: m.representationStatus || "",
+        dressSize: m.dressSize || "",
+        shoeSizeSystem: m.shoeSizeSystem || "",
+      });
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Failed to load");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditModelId(null);
+    setEditData(null);
+    setEditError(null);
+    setEditSuccess(null);
+  };
+
+  const handleEditSave = async () => {
+    if (!editModelId || !editData) return;
+    setEditSaving(true);
+    setEditError(null);
+    setEditSuccess(null);
+    try {
+      const body: Record<string, any> = {
+        professionalName: editData.professionalName || null,
+        bio: editData.bio || null,
+        category: editData.category,
+        categories: editData.categories,
+        skills: editData.skills,
+        languages: editData.languages,
+        experienceLevel: editData.experienceLevel || null,
+        notableCredits: editData.notableCredits || null,
+        isAvailable: editData.isAvailable,
+        location: editData.location || null,
+        height: editData.height,
+        hairColor: editData.hairColor || null,
+        eyeColor: editData.eyeColor || null,
+        nationality: editData.nationality || null,
+        travelAvailability: editData.travelAvailability || null,
+        representationStatus: editData.representationStatus || null,
+        dressSize: editData.dressSize || null,
+        shoeSizeSystem: editData.shoeSizeSystem || null,
+      };
+      // Send all measurement fields explicitly so they can be cleared
+      body.bustCm = editData.bustCm || null;
+      body.chestCm = editData.chestCm || null;
+      body.waistCm = editData.waistCm || null;
+      body.hipsCm = editData.hipsCm || null;
+      body.inseamCm = editData.inseamCm || null;
+      body.shoeSize = editData.shoeSize || null;
+
+      const res = await fetch(`/api/models/${editModelId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to save");
+      }
+      setEditSuccess("Profile updated successfully!");
+      fetchData();
+      setTimeout(() => closeEditModal(), 1500);
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Failed to save changes");
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const updateEditField = (field: string, value: any) => {
+    setEditData((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const CATEGORIES_LIST = [
+    "Runway", "Commercial", "Editorial", "Fashion", "Fit",
+    "Parts", "Plus Size", "Petite", "Mature", "Child",
+    "Swimwear", "Lingerie", "Fitness", "Tattoo", "Alternative",
+    "Promotional", "Character", "Hand", "Foot", "Art",
+  ];
+
+  const SKILLS_LIST = [
+    "Acting", "Dancing", "Singing", "Gymnastics", "Martial Arts",
+    "Horseback Riding", "Skiing", "Snowboarding", "Surfing", "Swimming",
+    "Yoga", "Pilates", "Acro", "Stage Combat", "Improv",
+    "Voice Over", "Hosting", "Public Speaking", "Sign Language",
+  ];
 
   // Profile completion estimate
   const profileComplete = agency?.name && agency?.location ? 80 : 40;
@@ -386,7 +517,7 @@ function AgencyDashboardInner() {
                                     {copiedId === m.id ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
                                   </button>
                                   <button
-                                    onClick={() => {/* Edit profile - navigate to public page for now */ window.open(`/models/${m.id}`, '_blank')}}
+                                    onClick={() => openEditModal(m.id)}
                                     className="rounded-lg p-1.5 hover:bg-[#F8F5EF] text-[#6B6257] hover:text-[#C8A96A] transition-colors"
                                     title="Edit profile"
                                   >
@@ -588,6 +719,284 @@ function AgencyDashboardInner() {
         onSuccess={() => { fetchData(); showToast("Model profile created successfully!"); }}
         verificationStatus={verificationStatus}
       />
+
+      {/* Edit Model Modal */}
+      {editModelId && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 backdrop-blur-sm p-4 pt-12 overflow-y-auto">
+          <div className="w-full max-w-2xl bg-white rounded-2xl border border-[#E7DED1] p-6 shadow-2xl my-8">
+            <div className="flex items-center justify-between border-b border-[#E7DED1]/70 pb-3 mb-4">
+              <h3 className="font-serif text-lg font-bold uppercase text-[#1D1A16]">
+                {editLoading ? "Loading..." : `Edit Model Profile`}
+              </h3>
+              <button onClick={closeEditModal} className="text-[#6B6257] hover:text-[#1D1A16]">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {editLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-[#C8A96A]" />
+              </div>
+            ) : editData ? (
+              <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+                {editError && (
+                  <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-600 flex items-start gap-2">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    {editError}
+                  </div>
+                )}
+                {editSuccess && (
+                  <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-600 flex items-start gap-2">
+                    <CheckCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    {editSuccess}
+                  </div>
+                )}
+
+                {/* Basic Info */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Professional Name</label>
+                    <input type="text" value={editData.professionalName} onChange={(e) => updateEditField("professionalName", e.target.value)}
+                      className="w-full rounded-xl border border-[#E7DED1] bg-white p-2.5 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Nationality</label>
+                    <input type="text" value={editData.nationality} onChange={(e) => updateEditField("nationality", e.target.value)}
+                      className="w-full rounded-xl border border-[#E7DED1] bg-white p-2.5 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Bio</label>
+                  <textarea rows={3} value={editData.bio} onChange={(e) => updateEditField("bio", e.target.value)}
+                    className="w-full rounded-xl border border-[#E7DED1] bg-white p-2.5 text-xs focus:outline-none focus:border-[#C8A96A] resize-none" />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Location</label>
+                  <input type="text" value={editData.location} onChange={(e) => updateEditField("location", e.target.value)}
+                    placeholder="Kigali, Rwanda" className="w-full rounded-xl border border-[#E7DED1] bg-white p-2.5 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                </div>
+
+                {/* Categories */}
+                <div className="space-y-2">
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Categories</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {CATEGORIES_LIST.map((cat) => {
+                      const selected = editData.categories?.includes(cat);
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => {
+                            const current = editData.categories || [];
+                            updateEditField("categories",
+                              selected ? current.filter((c: string) => c !== cat) : [...current, cat]
+                            );
+                          }}
+                          className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border transition-colors ${
+                            selected
+                              ? "bg-[#1D1A16] text-white border-[#1D1A16]"
+                              : "bg-white text-[#6B6257] border-[#E7DED1] hover:border-[#C8A96A]"
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Skills */}
+                <div className="space-y-2">
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Skills</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {SKILLS_LIST.map((skill) => {
+                      const selected = editData.skills?.includes(skill);
+                      return (
+                        <button
+                          key={skill}
+                          type="button"
+                          onClick={() => {
+                            const current = editData.skills || [];
+                            updateEditField("skills",
+                              selected ? current.filter((s: string) => s !== skill) : [...current, skill]
+                            );
+                          }}
+                          className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border transition-colors ${
+                            selected
+                              ? "bg-[#C8A96A] text-white border-[#C8A96A]"
+                              : "bg-white text-[#6B6257] border-[#E7DED1] hover:border-[#C8A96A]"
+                          }`}
+                        >
+                          {skill}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Languages */}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Languages (comma-separated)</label>
+                  <input type="text" value={editData.languages?.join(", ") || ""} onChange={(e) => updateEditField("languages", e.target.value.split(",").map((s: string) => s.trim()).filter(Boolean))}
+                    placeholder="English, French, Kinyarwanda" className="w-full rounded-xl border border-[#E7DED1] bg-white p-2.5 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                </div>
+
+                {/* Availability & Experience */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3 p-3 bg-[#F8F5EF] rounded-xl">
+                    <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257]">Available for Booking</label>
+                    <button
+                      onClick={() => updateEditField("isAvailable", !editData.isAvailable)}
+                      className={`relative w-10 h-5 rounded-full transition-colors ${editData.isAvailable ? "bg-emerald-500" : "bg-[#E7DED1]"}`}
+                    >
+                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${editData.isAvailable ? "translate-x-5" : "translate-x-0.5"}`} />
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Experience Level</label>
+                    <select value={editData.experienceLevel} onChange={(e) => updateEditField("experienceLevel", e.target.value)}
+                      className="w-full rounded-xl border border-[#E7DED1] bg-white p-2.5 text-xs focus:outline-none focus:border-[#C8A96A]">
+                      <option value="">Select...</option>
+                      <option value="Newcomer">Newcomer</option>
+                      <option value="Emerging">Emerging</option>
+                      <option value="Experienced">Experienced</option>
+                      <option value="Professional">Professional</option>
+                      <option value="Top">Top</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Notable Credits</label>
+                  <input type="text" value={editData.notableCredits} onChange={(e) => updateEditField("notableCredits", e.target.value)}
+                    placeholder="e.g. Vogue Italia, Paris Fashion Week" className="w-full rounded-xl border border-[#E7DED1] bg-white p-2.5 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                </div>
+
+                {/* Travel & Representation */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Travel Availability</label>
+                    <select value={editData.travelAvailability} onChange={(e) => updateEditField("travelAvailability", e.target.value)}
+                      className="w-full rounded-xl border border-[#E7DED1] bg-white p-2.5 text-xs focus:outline-none focus:border-[#C8A96A]">
+                      <option value="">Select...</option>
+                      <option value="Local only">Local only</option>
+                      <option value="Regional">Regional</option>
+                      <option value="International">International</option>
+                      <option value="Worldwide">Worldwide</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257] block">Representation Status</label>
+                    <select value={editData.representationStatus} onChange={(e) => updateEditField("representationStatus", e.target.value)}
+                      className="w-full rounded-xl border border-[#E7DED1] bg-white p-2.5 text-xs focus:outline-none focus:border-[#C8A96A]">
+                      <option value="">Select...</option>
+                      <option value="Exclusive">Exclusive</option>
+                      <option value="Non-exclusive">Non-exclusive</option>
+                      <option value="Mother agency">Mother Agency</option>
+                      <option value="Direct">Direct</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Measurements Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowMeasurements(!showMeasurements)}
+                  className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#C8A96A] hover:text-[#1D1A16] transition-colors"
+                >
+                  {showMeasurements ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                  {showMeasurements ? "Hide" : "Show"} Measurements
+                </button>
+
+                {showMeasurements && (
+                  <div className="space-y-4 p-4 bg-[#F8F5EF] rounded-xl border border-[#E7DED1]">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold uppercase tracking-widest text-[#6B6257] block">Height (cm)</label>
+                        <input type="number" value={editData.height || ""} onChange={(e) => updateEditField("height", parseFloat(e.target.value) || 0)}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-white p-2 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold uppercase tracking-widest text-[#6B6257] block">Bust (cm)</label>
+                        <input type="number" value={editData.bustCm || ""} onChange={(e) => updateEditField("bustCm", parseFloat(e.target.value) || null)}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-white p-2 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold uppercase tracking-widest text-[#6B6257] block">Chest (cm)</label>
+                        <input type="number" value={editData.chestCm || ""} onChange={(e) => updateEditField("chestCm", parseFloat(e.target.value) || null)}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-white p-2 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold uppercase tracking-widest text-[#6B6257] block">Waist (cm)</label>
+                        <input type="number" value={editData.waistCm || ""} onChange={(e) => updateEditField("waistCm", parseFloat(e.target.value) || null)}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-white p-2 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold uppercase tracking-widest text-[#6B6257] block">Hips (cm)</label>
+                        <input type="number" value={editData.hipsCm || ""} onChange={(e) => updateEditField("hipsCm", parseFloat(e.target.value) || null)}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-white p-2 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold uppercase tracking-widest text-[#6B6257] block">Inseam (cm)</label>
+                        <input type="number" value={editData.inseamCm || ""} onChange={(e) => updateEditField("inseamCm", parseFloat(e.target.value) || null)}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-white p-2 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold uppercase tracking-widest text-[#6B6257] block">Shoe Size</label>
+                        <input type="number" value={editData.shoeSize || ""} onChange={(e) => updateEditField("shoeSize", parseFloat(e.target.value) || null)}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-white p-2 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold uppercase tracking-widest text-[#6B6257] block">Shoe System</label>
+                        <select value={editData.shoeSizeSystem} onChange={(e) => updateEditField("shoeSizeSystem", e.target.value)}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-white p-2 text-xs focus:outline-none focus:border-[#C8A96A]">
+                          <option value="">Select...</option>
+                          <option value="US">US</option>
+                          <option value="EU">EU</option>
+                          <option value="UK">UK</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold uppercase tracking-widest text-[#6B6257] block">Dress Size</label>
+                        <input type="text" value={editData.dressSize} onChange={(e) => updateEditField("dressSize", e.target.value)}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-white p-2 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold uppercase tracking-widest text-[#6B6257] block">Hair Color</label>
+                        <input type="text" value={editData.hairColor} onChange={(e) => updateEditField("hairColor", e.target.value)}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-white p-2 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold uppercase tracking-widest text-[#6B6257] block">Eye Color</label>
+                        <input type="text" value={editData.eyeColor} onChange={(e) => updateEditField("eyeColor", e.target.value)}
+                          className="w-full rounded-xl border border-[#E7DED1] bg-white p-2 text-xs focus:outline-none focus:border-[#C8A96A]" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-3 justify-end pt-4 border-t border-[#E7DED1]/70">
+                  <button onClick={closeEditModal}
+                    className="rounded-full border border-[#E7DED1] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-[#6B6257] hover:bg-[#F8F5EF]">
+                    Cancel
+                  </button>
+                  <button onClick={handleEditSave} disabled={editSaving}
+                    className="rounded-full bg-[#1D1A16] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] disabled:opacity-60 flex items-center gap-1.5">
+                    {editSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    <Save className="h-3.5 w-3.5" />
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="py-8 text-center text-xs text-[#6B6257]">Failed to load model data.</div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Archive Confirmation Dialog */}
       {archiveConfirm && (
