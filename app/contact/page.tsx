@@ -88,7 +88,7 @@ export default function ContactPage() {
                   {[
                     { icon: MapPin, label: "Address", text: "Kigali, Rwanda" },
                     { icon: Phone, label: "Phone", text: "+250 790 305 483" },
-                    { icon: Mail, label: "Email", text: "hello@modelconnect.africa" },
+                    { icon: Mail, label: "Email", text: "fashionconnect0@gmail.com" },
                   ].map(({ icon: Icon, label, text }) => (
                     <div key={label} className="flex items-start gap-3">
                       <div className="rounded-lg bg-[#F8F5EF] p-2 shrink-0">
