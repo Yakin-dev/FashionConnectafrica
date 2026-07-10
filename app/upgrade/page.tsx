@@ -434,7 +434,7 @@ function UpgradePageInner() {
                   <div className="space-y-3">
                     <div>
                       <p className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257]">Send To</p>
-                      <p className="text-xs font-bold text-[#1D1A16] mt-0.5">0790305483</p>
+                      <p className="text-xs font-bold text-[#1D1A16] mt-0.5">1780513</p>
                     </div>
                     <div>
                       <p className="text-[9px] font-bold uppercase tracking-widest text-[#6B6257]">Account</p>
