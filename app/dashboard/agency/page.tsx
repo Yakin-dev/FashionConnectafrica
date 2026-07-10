@@ -15,7 +15,7 @@ import {
   Users, BookOpen, UserPlus, Eye, CheckCircle,
   Clock, AlertCircle, Loader2, ShieldCheck, XCircle,
   ArrowUpRight, Copy, Check, FileText, Lock, Pencil,
-  Archive, ArchiveRestore,
+  Archive, ArchiveRestore, MessageSquare,
 } from "lucide-react";
 
 interface DBModel {
@@ -30,6 +30,23 @@ interface DBModel {
   profileImageUrl: string | null;
   user: { name: string; email: string };
   portfolioMedia: { id: string }[];
+}
+
+interface DBInquiry {
+  id: string;
+  senderName: string;
+  senderEmail: string;
+  senderPhone: string | null;
+  preferredDate: string;
+  notes: string;
+  isRead: boolean;
+  createdAt: string;
+  model: {
+    id: string;
+    professionalName: string | null;
+    profileImageUrl: string | null;
+    category: string;
+  };
 }
 
 interface DBCasting {
@@ -86,6 +103,7 @@ function AgencyDashboardInner() {
   const [agency, setAgency]       = useState<AgencyData | null>(null);
   const [dbModels, setDbModels]   = useState<DBModel[]>([]);
   const [castings, setCastings]   = useState<DBCasting[]>([]);
+  const [inquiries, setInquiries] = useState<DBInquiry[]>([]);
   const [loading, setLoading]     = useState(true);
   const [copiedId, setCopiedId]   = useState<string | null>(null);
   const [showWizard, setShowWizard] = useState(false);
@@ -109,19 +127,22 @@ function AgencyDashboardInner() {
 
   const sidebarItems = [
     { name: "Represented Models", href: "/dashboard/agency", icon: Users },
-    { name: "Manage Castings",    href: "/castings",         icon: BookOpen },
+    { name: "Castings",           href: "/castings",         icon: BookOpen },
+    { name: "Inquiries",          href: "/dashboard/agency#inquiries", icon: MessageSquare },
   ];
 
   const fetchData = async () => {
     try {
-      const [agencyRes, modelsRes, castingsRes] = await Promise.all([
+      const [agencyRes, modelsRes, castingsRes, inquiriesRes] = await Promise.all([
         fetch("/api/agency/me"),
         fetch("/api/agency/models"),
         fetch("/api/castings?mine=true"),
+        fetch("/api/agency/inquiries"),
       ]);
       if (agencyRes.ok)   { const d = await agencyRes.json();   setAgency(d.agency); }
       if (modelsRes.ok)   { const d = await modelsRes.json();   setDbModels(d.models ?? []); }
       if (castingsRes.ok) { const d = await castingsRes.json(); setCastings(d.castings ?? []); }
+      if (inquiriesRes.ok) { const d = await inquiriesRes.json(); setInquiries(d.inquiries ?? []); }
     } catch {
       // DB unavailable
     } finally {
@@ -484,6 +505,69 @@ function AgencyDashboardInner() {
                               Submit Models
                             </Link>
                           )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Inquiries Section */}
+              {inquiries.length > 0 && (
+                <div className="rounded-2xl border border-[#E7DED1] bg-white p-6 shadow-sm" id="inquiries">
+                  <h3 className="font-serif text-lg font-bold uppercase tracking-widest text-[#1D1A16] border-b border-[#E7DED1]/70 pb-3 mb-4">
+                    Booking Inquiries ({inquiries.length})
+                  </h3>
+                  <div className="space-y-4">
+                    {inquiries.map((inq) => (
+                      <div key={inq.id} className="rounded-xl border border-[#E7DED1] p-4 text-xs space-y-2">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full overflow-hidden bg-[#E7DED1] shrink-0">
+                              {inq.model.profileImageUrl ? (
+                                <img src={inq.model.profileImageUrl} alt={inq.model.professionalName || ""} className="object-cover h-full w-full" />
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-[#6B6257]">
+                                  {(inq.model.professionalName || "M").charAt(0)}
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-bold text-[#1D1A16]">{inq.model.professionalName || "Model"}</p>
+                              <span className="text-[9px] text-[#6B6257] bg-[#F8F5EF] px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                {inq.model.category}
+                              </span>
+                            </div>
+                          </div>
+                          <span className="text-[9px] text-[#6B6257] shrink-0">
+                            {new Date(inq.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 bg-[#F8F5EF] rounded-lg p-3">
+                          <div>
+                            <span className="text-[8px] uppercase font-bold tracking-wider text-[#6B6257] block">From</span>
+                            <span className="text-xs font-medium text-[#1D1A16]">{inq.senderName}</span>
+                            <span className="text-[9px] text-[#6B6257] block">{inq.senderEmail}</span>
+                            {inq.senderPhone && <span className="text-[9px] text-[#6B6257] block">{inq.senderPhone}</span>}
+                          </div>
+                          <div>
+                            <span className="text-[8px] uppercase font-bold tracking-wider text-[#6B6257] block">Preferred Date</span>
+                            <span className="text-xs font-medium text-[#1D1A16]">{new Date(inq.preferredDate).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-[8px] uppercase font-bold tracking-wider text-[#6B6257] block mb-1">Requirements</span>
+                          <p className="text-xs text-[#6B6257] leading-relaxed">{inq.notes}</p>
+                        </div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className={`inline-block h-1.5 w-1.5 rounded-full ${inq.isRead ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                          <span className="text-[9px] text-[#6B6257]">{inq.isRead ? "Read" : "New"}</span>
+                          <Link
+                            href={`/models/${inq.model.id}`}
+                            className="ml-auto text-[9px] font-bold uppercase tracking-widest text-[#C8A96A] hover:text-[#1D1A16] transition-colors flex items-center gap-1"
+                          >
+                            View Profile <ArrowUpRight className="h-3 w-3" />
+                          </Link>
                         </div>
                       </div>
                     ))}

@@ -22,7 +22,7 @@ export async function POST(
     const model = await prisma.model.findUnique({
       where: { id },
       include: {
-        agency: { select: { userId: true, name: true } },
+        agency: { select: { id: true, userId: true, name: true } },
       },
     })
 
@@ -43,6 +43,19 @@ export async function POST(
     const data = inquirySchema.parse(body)
 
     const professionalName = model.professionalName || (await prisma.user.findUnique({ where: { id: model.userId } }))?.name || "Model"
+
+    // Store inquiry in database
+    await prisma.inquiry.create({
+      data: {
+        modelId: model.id,
+        agencyId: model.agency.id,
+        senderName: data.senderName,
+        senderEmail: data.senderEmail,
+        senderPhone: data.senderPhone || null,
+        preferredDate: data.preferredDate,
+        notes: data.notes,
+      },
+    })
 
     // Create notification for the agency
     await createAndDeliverNotification({

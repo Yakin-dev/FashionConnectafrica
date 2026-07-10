@@ -213,6 +213,7 @@ model Model {
   taggedEvents        Event[]              @relation("TaggedModels")
   reviews             Review[]
   portfolioMedia      ModelPortfolioMedia[]
+  inquiries           Inquiry[]
 }
 
 model Agency {
@@ -232,6 +233,7 @@ model Agency {
 
   models              Model[]
   castings            Casting[]
+  inquiries           Inquiry[]
 }
 
 model Client {
@@ -567,4 +569,26 @@ model ManualPayment {
 
   @@index([userId])
   @@index([status])
+}
+
+// Inquiries from model profile pages directed to the agency
+model Inquiry {
+  id            String   @id @default(uuid())
+  modelId       String
+  model         Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  agencyId      String
+  agency        Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  senderName    String
+  senderEmail   String
+  senderPhone   String?
+  preferredDate String
+  notes         String
+  isRead        Boolean  @default(false)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([agencyId])
+  @@index([modelId])
 }

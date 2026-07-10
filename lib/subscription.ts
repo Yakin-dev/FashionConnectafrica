@@ -81,6 +81,8 @@ export async function checkSubscriptionExpiry(userId: string): Promise<{
       message: "Your subscription has expired. Your account has been downgraded to Free limits, and your agency listing has been removed from public view. Renew and contact admin to restore visibility.",
       type: "SYSTEM",
       actionUrl: "/upgrade",
+      sendPush: true,
+      sendEmail: true,
     })
 
     return { expired: true, daysRemaining: 0, reminderSent: true }
@@ -109,6 +111,8 @@ export async function checkSubscriptionExpiry(userId: string): Promise<{
           message: `Your ${planLabel} plan expires in ${day} day${day > 1 ? "s" : ""}. Renew now to keep your portfolio, expanded listing visibility, and premium tools.`,
           type: "SYSTEM",
           actionUrl: "/upgrade",
+          sendPush: true,
+          sendEmail: true,
         })
         reminderSent = true
       }
