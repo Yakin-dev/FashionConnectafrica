@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth"
 import { NextRequest, NextResponse } from "next/server"
+import { SubscriptionPlan } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { canCreateModelProfile } from "@/lib/plan-limits"
@@ -49,7 +50,7 @@ const createSchema = z.object({
 })
 
 /** Plans whose agencies get featured/priority ranking */
-const FEATURED_PLANS = ["PRO_MONTHLY", "PRO_ANNUAL", "ULTIMATE_MONTHLY", "ULTIMATE_ANNUAL"]
+const FEATURED_PLANS: SubscriptionPlan[] = ["PRO_MONTHLY", "PRO_ANNUAL", "ULTIMATE_MONTHLY", "ULTIMATE_ANNUAL"]
 
 export async function GET(req: NextRequest) {
   try {

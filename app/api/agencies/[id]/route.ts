@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
+import { SubscriptionPlan } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 
-const FEATURED_PLANS = ["PRO_MONTHLY", "PRO_ANNUAL", "ULTIMATE_MONTHLY", "ULTIMATE_ANNUAL"]
+const FEATURED_PLANS: SubscriptionPlan[] = ["PRO_MONTHLY", "PRO_ANNUAL", "ULTIMATE_MONTHLY", "ULTIMATE_ANNUAL"]
 
 export async function GET(
   req: NextRequest,
