@@ -9,6 +9,7 @@ export interface AgencyCardData {
   location: string;
   description: string | null;
   isVerified: boolean;
+  subscriptionTier?: string | null;
   modelCount: string | null;
   _count?: { models: number; castings: number };
   user?: { name: string; email: string; avatarUrl?: string | null };
@@ -41,12 +42,24 @@ export default function AgencyCard({ agency }: AgencyCardProps) {
               </span>
             )}
           </div>
-          {agency.isVerified && (
-            <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-[#C8A96A] bg-[#C8A96A]/10 px-2 py-0.5 rounded-full">
-              <Sparkles className="h-2.5 w-2.5" />
-              <span>Partner</span>
-            </span>
-          )}
+          <div className="flex flex-wrap items-center gap-1.5 justify-end">
+            {agency.subscriptionTier === "ULTIMATE" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#C8A96A] to-amber-400 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-[#11100E] shadow-sm">
+                <Sparkles className="h-2.5 w-2.5" /> Ultimate
+              </span>
+            )}
+            {agency.subscriptionTier === "PRO" && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-[#C8A96A]/50 bg-[#C8A96A]/10 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-[#C8A96A]">
+                <Sparkles className="h-2.5 w-2.5" /> Pro
+              </span>
+            )}
+            {agency.isVerified && (
+              <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-[#C8A96A] bg-[#C8A96A]/10 px-2 py-0.5 rounded-full">
+                <Sparkles className="h-2.5 w-2.5" />
+                <span>Partner</span>
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Agency Information */}
@@ -71,7 +84,7 @@ export default function AgencyCard({ agency }: AgencyCardProps) {
           {modelsCount} {modelsCount === 1 ? "Model" : "Models"} Represented
         </span>
         <Link
-          href={`/search?type=agencies&q=${encodeURIComponent(agency.name)}`}
+          href={`/agencies/${agency.id}`}
           className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#C8A96A] group-hover:translate-x-1 transition-transform"
         >
           <span>View Roster</span>

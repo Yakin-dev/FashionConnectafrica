@@ -117,6 +117,7 @@ export async function POST(req: Request) {
       description: validatedData.description || null,
       contactPersonName: validatedData.contactPersonName || null,
       contactPersonRole: validatedData.contactPersonRole || null,
+      logoUrl: validatedData.logoUrl || null,
     }
 
     if (purpose === "agency") {
@@ -228,6 +229,7 @@ export async function POST(req: Request) {
         location: validatedData.city ? `${validatedData.city}, ${validatedData.country}` : "Not specified",
         verificationStatus: "PENDING_REVIEW",
         pilotStatus: "PENDING",
+        logoUrl: validatedData.logoUrl || null,
       }
       if (validatedData.instagramUrl) {
         agencyData.description = validatedData.description || null

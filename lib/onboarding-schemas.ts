@@ -21,6 +21,8 @@ const currentYear = new Date().getFullYear()
 const YEAR_OPTIONS = Array.from({ length: currentYear - 1990 + 1 }, (_, i) => String(1990 + i))
 
 export const agencySchema = z.object({
+  // 0. Logo URL (required — uploaded via Cloudinary)
+  logoUrl: z.string().min(1, "Agency branding logo is required. Please upload your agency logo."),
   // 1. Legal name
   legalName: nameField("Agency name"),
   // 2. Public name (optional)

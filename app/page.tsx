@@ -11,22 +11,28 @@ import { Sparkles, ArrowRight, ShieldCheck, Award, Briefcase, Camera, Users, Tre
 
 const HERO_SLIDES = [
   {
-    image: "https://media.giphy.com/media/dBIXZZwg7m8iiPxOQc/giphy.gif",
+    image: "/giphy.gif",
     tag: "Avant-Garde Runway",
     headline: ["Bold", "Editorial", "Fashion"],
     sub: "High-fashion meets raw creativity — pushing boundaries on the world's most iconic runways.",
   },
   {
-    image: "https://media.giphy.com/media/26ufiOFG3EIVrUl7G/giphy.gif",
+    image: "/giphy_2.gif",
     tag: "NY Fashion Week",
     headline: ["Where Style", "Meets The", "Runway"],
     sub: "Striking collections and unforgettable moments from the international fashion calendar.",
   },
   {
-    image: "https://media.giphy.com/media/xBpOGwU8X8OZSd43Vm/giphy.gif",
+    image: "/giphy_3.gif",
     tag: "Fashion Forward",
     headline: ["Discover", "Africa's", "Next Icons"],
     sub: "Connecting Kigali's finest models and creative talent with global fashion opportunities.",
+  },
+  {
+    image: "/giphy_4.gif",
+    tag: "Editorial Excellence",
+    headline: ["Premium", "Editorial", "Content"],
+    sub: "Stunning editorial visuals and premium fashion content crafted for the discerning creative eye.",
   },
 ];
 
@@ -115,17 +121,12 @@ export default function LandingPage() {
             transition={{ duration: 1.2, ease: "easeInOut" }}
             className="absolute inset-0"
           >
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              poster={slide.image}
+            {/* HD GIF background — displayed at native resolution */}
+            <img
+              src={slide.image}
+              alt={slide.tag}
               className="absolute inset-0 w-full h-full object-cover object-center"
-            >
-              <source src="/media/fashion-hero.mp4" type="video/mp4" />
-            </video>
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-[#0C0A08]/95 via-[#0C0A08]/50 to-[#0C0A08]/20" />
           </motion.div>
         </AnimatePresence>

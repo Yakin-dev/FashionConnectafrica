@@ -37,7 +37,7 @@ export default function Footer() {
                 <Link href="/models" className="text-[#6B6257] hover:text-white transition-colors">Browse Models</Link>
               </li>
               <li>
-                <Link href="/search?type=agencies" className="text-[#6B6257] hover:text-white transition-colors">Top Agencies</Link>
+                <Link href="/agencies" className="text-[#6B6257] hover:text-white transition-colors">Top Agencies</Link>
               </li>
               <li>
                 <Link href="/castings" className="text-[#6B6257] hover:text-white transition-colors">Castings & Auditions</Link>

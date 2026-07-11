@@ -64,6 +64,7 @@ interface AgencyData {
   id: string;
   name: string;
   location?: string;
+  logoUrl?: string | null;
   verificationStatus: string;
   pilotStatus: string;
   isVerified: boolean;
@@ -360,8 +361,8 @@ function AgencyDashboardInner() {
   ];
 
   // Profile completion estimate
-  const profileComplete = agency?.name && agency?.location ? 80 : 40;
-  const hasLogo = false; // Would check actual logo URL
+  const hasLogo = !!agency?.logoUrl;
+  const profileComplete = agency?.name && agency?.location ? (hasLogo ? 90 : 70) : 40;
 
   return (
     <>
@@ -375,6 +376,7 @@ function AgencyDashboardInner() {
               subtitle="Agency Control Panel"
               items={sidebarItems}
               role="AGENCY"
+              logoUrl={agency?.logoUrl}
             />
 
             <div className="flex-1 w-full space-y-8">

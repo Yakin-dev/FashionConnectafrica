@@ -20,9 +20,10 @@ interface DashboardSidebarProps {
   subtitle: string;
   items: SidebarItem[];
   role: "MODEL" | "AGENCY" | "ADMIN" | "CLIENT" | "MARKETPLACE_PROVIDER";
+  logoUrl?: string | null;
 }
 
-export default function DashboardSidebar({ title, subtitle, items, role }: DashboardSidebarProps) {
+export default function DashboardSidebar({ title, subtitle, items, role, logoUrl }: DashboardSidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -56,19 +57,35 @@ export default function DashboardSidebar({ title, subtitle, items, role }: Dashb
       {/* ── Desktop sidebar ────────────────────────────────────────── */}
       <aside className="hidden md:flex w-60 shrink-0 flex-col rounded-2xl border border-[#E7DED1] bg-white p-5 shadow-sm gap-6 self-start sticky top-6">
         <div className="border-b border-[#E7DED1]/60 pb-5">
-          <div className="flex items-center gap-2.5 font-serif text-sm font-bold tracking-widest uppercase text-[#1D1A16]">
-            <Image
-              src="/logo.jpeg"
-              alt="FashionConnect.Africa"
-              width={24}
-              height={24}
-              className="rounded-full object-cover ring-1 ring-[#C8A96A]/30"
-            />
-            <span>FashionConnect</span>
+          <div className="flex items-center gap-2.5">
+            {logoUrl ? (
+              <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl bg-[#E7DED1]/30 ring-1 ring-[#C8A96A]/30">
+                <Image
+                  src={logoUrl}
+                  alt={`${title} logo`}
+                  width={36}
+                  height={36}
+                  className="object-contain h-full w-full"
+                />
+              </div>
+            ) : (
+              <Image
+                src="/logo.jpeg"
+                alt="FashionConnect.Africa"
+                width={24}
+                height={24}
+                className="rounded-full object-cover ring-1 ring-[#C8A96A]/30 shrink-0"
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="font-serif text-sm font-bold tracking-widest uppercase text-[#1D1A16] truncate">
+                {logoUrl ? title : "FashionConnect"}
+              </div>
+              <p className="text-[10px] font-bold text-[#C8A96A] tracking-widest uppercase mt-0.5">
+                {role} PANEL
+              </p>
+            </div>
           </div>
-          <p className="text-[10px] font-bold text-[#C8A96A] tracking-widest uppercase mt-1">
-            {role} PANEL
-          </p>
           <div className="mt-4">
             <h2 className="text-sm font-bold font-serif text-[#1D1A16] truncate">{title}</h2>
             <p className="text-xs text-[#6B6257] truncate mt-0.5">{subtitle}</p>
@@ -113,15 +130,29 @@ export default function DashboardSidebar({ title, subtitle, items, role }: Dashb
             >
               <div className="flex items-center justify-between border-b border-[#E7DED1]/60 pb-5">
                 <div>
-                  <div className="flex items-center gap-2.5 font-serif text-sm font-bold tracking-widest uppercase text-[#1D1A16]">
-                    <Image
-                      src="/logo.jpeg"
-                      alt="FashionConnect.Africa"
-                      width={24}
-                      height={24}
-                      className="rounded-full object-cover ring-1 ring-[#C8A96A]/30"
-                    />
-                    <span>FashionConnect</span>
+                  <div className="flex items-center gap-2.5">
+                    {logoUrl ? (
+                      <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl bg-[#E7DED1]/30 ring-1 ring-[#C8A96A]/30">
+                        <Image
+                          src={logoUrl}
+                          alt={`${title} logo`}
+                          width={36}
+                          height={36}
+                          className="object-contain h-full w-full"
+                        />
+                      </div>
+                    ) : (
+                      <Image
+                        src="/logo.jpeg"
+                        alt="FashionConnect.Africa"
+                        width={24}
+                        height={24}
+                        className="rounded-full object-cover ring-1 ring-[#C8A96A]/30 shrink-0"
+                      />
+                    )}
+                    <div className="font-serif text-sm font-bold tracking-widest uppercase text-[#1D1A16]">
+                      {logoUrl ? title : "FashionConnect"}
+                    </div>
                   </div>
                   <p className="text-[10px] font-bold text-[#C8A96A] tracking-widest uppercase mt-0.5">{role} PANEL</p>
                   <p className="text-sm font-bold font-serif text-[#1D1A16] mt-2">{title}</p>

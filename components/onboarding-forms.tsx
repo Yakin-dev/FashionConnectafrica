@@ -1,5 +1,6 @@
 "use client"
 
+import { useRef, useState } from "react"
 import { UseFormRegister, UseFormSetValue, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
@@ -14,8 +15,9 @@ import {
   type MakeupArtistFormData, type FashionStylistFormData,
   type HairStylistFormData, type VideographerFormData,
 } from "@/lib/onboarding-schemas"
+import { validateMediaFile } from "@/lib/cloudinary"
 import { motion } from "framer-motion"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, UploadCloud, Loader2, X, CheckCircle2 } from "lucide-react"
 
 // ─── Shared UI ─────────────────────────────────────────────────────────
 const inputClass =
@@ -241,6 +243,7 @@ export function AgencyForm({
 
   const establishedYear = watch("establishedYear")
   const registrationStatus = watch("registrationStatus")
+  const logoUrl = watch("logoUrl")
 
   const operationMonths = establishedYear ? calculateOperationMonths(establishedYear) : 0
   const yearsOp = establishedYear ? Math.floor(operationMonths / 12) : 0
@@ -248,6 +251,42 @@ export function AgencyForm({
   const ageError = establishedYear ? getAgencyAgeError(operationMonths) : null
 
   const needsRegNumber = registrationStatus && registrationStatus !== "Not yet formally registered"
+
+  // Logo upload state
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null)
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setLogoUploadError(null)
+
+    const validation = validateMediaFile(file.name, file.size, ["image/jpeg", "image/png", "image/webp"])
+    if (!validation.valid) { setLogoUploadError(validation.error ?? "Invalid file"); return }
+
+    setLogoUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("folder", "agency-logos")
+
+      const res = await fetch("/api/upload", { method: "POST", body: formData })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? "Upload failed")
+
+      setValue("logoUrl", data.url, { shouldValidate: true })
+    } catch (err) {
+      setLogoUploadError(err instanceof Error ? err.message : "Upload failed")
+    } finally {
+      setLogoUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
+
+  const handleRemoveLogo = () => {
+    setValue("logoUrl", "", { shouldValidate: true })
+  }
 
   const onSubmit = (data: AgencyFormData) => {
     if (ageError) return
@@ -332,6 +371,68 @@ export function AgencyForm({
           error={errors.agencyServices?.message}
           required
         />
+
+        {/* Agency Logo Upload */}
+        <div>
+          <label className={labelClass}>
+            Agency Branding Logo *
+          </label>
+          <p className={hintClass} style={{ marginTop: '-0.5rem', marginBottom: '0.5rem' }}>
+            Upload your agency logo. JPEG, PNG, WebP up to 10MB.
+          </p>
+
+          {logoUrl ? (
+            <div className="relative rounded-2xl border border-[#E7DED1] bg-white p-4 flex items-center gap-4">
+              <div className="h-16 w-16 rounded-xl overflow-hidden bg-[#F8F5EF] border border-[#E7DED1] shrink-0 flex items-center justify-center">
+                <img src={logoUrl} alt="Agency logo preview" className="h-full w-full object-contain" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-[#1D1A16] truncate">Logo uploaded</p>
+                <p className="text-[10px] text-emerald-600 flex items-center gap-1 mt-0.5">
+                  <CheckCircle2 className="h-3 w-3" /> Ready
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleRemoveLogo}
+                className="rounded-full p-1.5 text-[#6B6257] hover:text-red-500 hover:bg-red-50 transition-colors"
+                title="Remove logo"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="rounded-2xl border-2 border-dashed border-[#E7DED1] bg-white p-6 text-center cursor-pointer hover:border-[#C8A96A] hover:bg-[#F8F5EF]/50 transition-colors"
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleLogoUpload}
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+              />
+              {logoUploading ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#C8A96A]" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#6B6257]">Uploading logo...</span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="rounded-full bg-[#F8F5EF] p-3">
+                    <UploadCloud className="h-5 w-5 text-[#C8A96A]" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#6B6257]">Click to upload agency logo</span>
+                  <span className="text-[10px] text-[#9B9189]">JPEG, PNG, WebP · Max 10MB</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {logoUploadError && <p className={errorClass} role="alert">{logoUploadError}</p>}
+          {errors.logoUrl?.message && <p className={errorClass} role="alert">{errors.logoUrl.message}</p>}
+        </div>
 
         <TextAreaField
           register={register} name="description" label="Agency Description"

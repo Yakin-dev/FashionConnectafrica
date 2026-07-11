@@ -48,6 +48,9 @@ const createSchema = z.object({
   consentAccuracy: z.literal(true, { message: "You must confirm the information is accurate." }),
 })
 
+/** Plans whose agencies get featured/priority ranking */
+const FEATURED_PLANS = ["PRO_MONTHLY", "PRO_ANNUAL", "ULTIMATE_MONTHLY", "ULTIMATE_ANNUAL"]
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -56,6 +59,7 @@ export async function GET(req: NextRequest) {
     const limit = Number(searchParams.get("limit") ?? 20)
     const status = searchParams.get("status") ?? "PUBLISHED"
 
+    // Fetch all published models first with basic filters
     const models = await prisma.model.findMany({
       where: {
         profileStatus: status,
@@ -69,14 +73,55 @@ export async function GET(req: NextRequest) {
       },
       include: {
         user: { select: { name: true, email: true } },
-        agency: { select: { name: true, isVerified: true } },
+        agency: { select: { name: true, isVerified: true, id: true } },
         portfolioMedia: { orderBy: { sortOrder: "asc" }, take: 1 },
       },
+      // Order by viewsCount desc as base ordering
       orderBy: { viewsCount: "desc" },
-      take: limit,
+      take: limit * 2, // Fetch extra to account for reordering
     })
 
-    return NextResponse.json({ models })
+    // Collect all agency IDs that have non-null agency
+    const agencyIds = models
+      .map((m) => m.agency?.id)
+      .filter((id): id is string => !!id)
+
+    // Find which of those agencies have active Pro/Ultimate subscriptions
+    let featuredAgencyIds = new Set<string>()
+    if (agencyIds.length > 0) {
+      const subscriptions = await prisma.subscription.findMany({
+        where: {
+          user: { agency: { id: { in: agencyIds } } },
+          plan: { in: FEATURED_PLANS },
+          status: "ACTIVE",
+        },
+        include: {
+          user: {
+            select: { agency: { select: { id: true } } },
+          },
+        },
+      })
+      featuredAgencyIds = new Set(
+        subscriptions
+          .map((s) => s.user.agency?.id)
+          .filter((id): id is string => !!id)
+      )
+    }
+
+    // Sort: featured (Pro/Ultimate agency) models first, then by viewsCount descending
+    const sortedModels = [...models].sort((a, b) => {
+      const aFeatured = a.agencyId ? featuredAgencyIds.has(a.agencyId) : false
+      const bFeatured = b.agencyId ? featuredAgencyIds.has(b.agencyId) : false
+
+      // Featured models come first
+      if (aFeatured && !bFeatured) return -1
+      if (!aFeatured && bFeatured) return 1
+
+      // Then by viewsCount descending
+      return b.viewsCount - a.viewsCount
+    })
+
+    return NextResponse.json({ models: sortedModels.slice(0, limit) })
   } catch (error) {
     console.error("[GET /api/models] failed", {
       message: error instanceof Error ? error.message : String(error),

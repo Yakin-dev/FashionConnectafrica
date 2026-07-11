@@ -17,7 +17,7 @@ export default function Navbar() {
 
   const navLinks = [
     { name: "Models", href: "/models" },
-    { name: "Agencies", href: "/search?type=agencies" },
+    { name: "Agencies", href: "/agencies" },
     { name: "Castings", href: "/castings" },
     { name: "Marketplace", href: "/marketplace" },
     { name: "About", href: "/about" },

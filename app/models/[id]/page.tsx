@@ -391,7 +391,7 @@ export default function ModelProfilePage({ params }: { params: Promise<{ id: str
                       Contact Representing Agency
                     </button>
                     <Link
-                      href={`/search?type=agencies`}
+                      href={`/agencies`}
                       className="w-full text-center text-[10px] font-bold uppercase tracking-widest text-[#6B6257] hover:text-[#C8A96A] transition-colors flex items-center justify-center gap-1"
                     >
                       <ExternalLink className="h-3 w-3" />
