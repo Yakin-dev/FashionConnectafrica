@@ -1,6 +1,13 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { Mail, ArrowLeft } from "lucide-react"
 import Image from "next/image"
+
+export const metadata: Metadata = {
+  title: "Forgot Password | FashionConnect.Africa",
+  description: "Reset your FashionConnect.Africa account password. Account recovery for fashion professionals in Rwanda and across Africa.",
+  robots: { index: false, follow: false },
+}
 
 export default function ForgotPasswordPage() {
   return (

@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth"
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { z } from "zod"
 
 const schema = z.object({
@@ -13,6 +14,16 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limiting to prevent spam
+    const ip = getClientIp(req)
+    const rateCheck = checkRateLimit(ip, "contact:submit")
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: "Too many messages. Please try again later." },
+        { status: 429, headers: { "Retry-After": "3600" } }
+      )
+    }
+
     const currentUser = await getCurrentUser()
     const dbUserId = currentUser?.id ?? null
 

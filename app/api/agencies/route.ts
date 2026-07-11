@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
         user: { select: { name: true, email: true, avatarUrl: true } },
         _count: { select: { models: true, castings: true } },
       },
+      // Note: slug is selected implicitly via agency.*
       orderBy: { user: { createdAt: "desc" } },
       take: limit * 2, // Fetch extra to account for reordering
     })

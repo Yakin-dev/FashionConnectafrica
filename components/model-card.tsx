@@ -3,11 +3,12 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { generateModelCardAltText, getCloudinaryBlurUrl } from "@/lib/images"
 import { Sparkles, MapPin, Eye, Heart } from "lucide-react";
 import { MockModel } from "@/lib/mock-data";
 
 interface ModelCardProps {
-  model: MockModel;
+  model: MockModel & { slug?: string };
 }
 
 export default function ModelCard({ model }: ModelCardProps) {
@@ -28,9 +29,12 @@ export default function ModelCard({ model }: ModelCardProps) {
       <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-[#E7DED1]/40">
         <Image
           src={model.avatarUrl}
-          alt={model.name}
+          alt={generateModelCardAltText(model.name, model.category, model.location)}
           fill
-          sizes="(max-w-7xl) 33vw, 50vw"
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          loading="lazy"
+          placeholder={getCloudinaryBlurUrl(model.avatarUrl) ? "blur" : undefined}
+          blurDataURL={getCloudinaryBlurUrl(model.avatarUrl)}
           className="object-cover transition-transform duration-700 group-hover:scale-105"
         />
         {/* Editorial category badge */}
@@ -40,7 +44,7 @@ export default function ModelCard({ model }: ModelCardProps) {
         {/* Quick view overlap */}
         <div className="absolute inset-0 bg-[#1D1A16]/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
           <Link
-            href={`/models/${model.id}`}
+            href={`/models/${(model as any).slug || model.id}`}
             className="flex items-center gap-1.5 rounded-full bg-[#F8F5EF] px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-[#1D1A16] hover:bg-[#C8A96A] hover:text-white transition-all shadow-lg"
           >
             <Eye className="h-4 w-4" />

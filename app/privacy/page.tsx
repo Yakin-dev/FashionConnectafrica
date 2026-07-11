@@ -1,6 +1,14 @@
+import type { Metadata } from "next"
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import SectionHeader from "@/components/section-header";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy | FashionConnect.Africa",
+  description: "Understand how FashionConnect.Africa handles your personal data, identity ownership, and privacy safeguards for fashion professionals in Africa.",
+  alternates: { canonical: "/privacy" },
+  openGraph: { title: "Privacy Policy | FashionConnect.Africa", url: "/privacy" },
+}
 
 export default function PrivacyPage() {
   return (

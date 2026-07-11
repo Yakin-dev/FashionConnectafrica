@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { SubscriptionPlan } from "@prisma/client"
+import { findAgencyByIdOrSlug } from "@/lib/db-helpers"
 import { prisma } from "@/lib/prisma"
 
 const FEATURED_PLANS: SubscriptionPlan[] = ["PRO_MONTHLY", "PRO_ANNUAL", "ULTIMATE_MONTHLY", "ULTIMATE_ANNUAL"]
@@ -9,19 +10,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
+    const { id: slugOrId } = await params
     const { searchParams } = new URL(req.url)
 
     const page = Math.max(1, Number(searchParams.get("page") ?? 1))
     const pageSize = Math.min(50, Math.max(1, Number(searchParams.get("pageSize") ?? 6)))
     const skip = (page - 1) * pageSize
 
-    const agency = await prisma.agency.findUnique({
-      where: { id },
-      include: {
-        user: { select: { name: true, email: true, avatarUrl: true } },
-        _count: { select: { models: true, castings: true } },
-      },
+    const agency = await findAgencyByIdOrSlug(slugOrId, {
+      user: { select: { name: true, email: true, avatarUrl: true } },
+      _count: { select: { models: true, castings: true } },
     })
 
     if (!agency) {
@@ -46,7 +44,7 @@ export async function GET(
     const [models, totalModels] = await Promise.all([
       prisma.model.findMany({
         where: {
-          agencyId: id,
+          agencyId: agency.id,
           profileStatus: "PUBLISHED",
         },
         include: {
@@ -59,7 +57,7 @@ export async function GET(
       }),
       prisma.model.count({
         where: {
-          agencyId: id,
+          agencyId: agency.id,
           profileStatus: "PUBLISHED",
         },
       }),

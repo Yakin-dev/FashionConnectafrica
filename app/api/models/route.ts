@@ -4,6 +4,7 @@ import { SubscriptionPlan } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { canCreateModelProfile } from "@/lib/plan-limits"
+import { modelSlug, makeUniqueSlug } from "@/lib/slug"
 
 const createSchema = z.object({
   name: z.string().min(2, "Full legal name is required."),
@@ -219,8 +220,14 @@ export async function POST(req: NextRequest) {
       dateOfBirth = new Date(data.dateOfBirth);
     }
 
+    // Auto-generate SEO-friendly slug
+    let slug = modelSlug(data.professionalName, modelUser.id)
+    const existingSlug = await prisma.model.findUnique({ where: { slug } })
+    if (existingSlug) slug = makeUniqueSlug(slug)
+
     const model = await prisma.model.create({
       data: {
+        slug,
         userId: modelUser.id,
         gender: data.gender,
         category: data.categories?.[0] || "Runway",

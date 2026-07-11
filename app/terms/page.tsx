@@ -1,6 +1,14 @@
+import type { Metadata } from "next"
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import SectionHeader from "@/components/section-header";
+
+export const metadata: Metadata = {
+  title: "Terms of Service | FashionConnect.Africa",
+  description: "Review the terms of engagement for using FashionConnect.Africa — booking contracts, profile accuracy requirements, and platform rules for fashion professionals.",
+  alternates: { canonical: "/terms" },
+  openGraph: { title: "Terms of Service | FashionConnect.Africa", url: "/terms" },
+}
 
 export default function TermsPage() {
   return (

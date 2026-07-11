@@ -194,6 +194,9 @@ model Model {
   topSize             String?
   bottomSize          String?
 
+  // SEO-friendly URL slug
+  slug                String?              @unique
+
   // Profile management
   profileStatus       String               @default("DRAFT")
   privateContactEmail String?
@@ -222,6 +225,7 @@ model Agency {
   user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   name                String
+  slug                String?              @unique
   logoUrl             String?
   cloudinaryPublicId  String?
   description         String?

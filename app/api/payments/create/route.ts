@@ -3,9 +3,20 @@ import { v4 as uuidv4 } from "uuid"
 import { PLANS, type PlanId, planIdToPrismaPlan } from "@/lib/flutterwave"
 import { prisma } from "@/lib/prisma"
 import { getSessionUser } from "@/lib/session"
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting
+    const ip = getClientIp(request)
+    const rateCheck = checkRateLimit(ip, "payment:create")
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: "Too many payment attempts. Please try again later." },
+        { status: 429 }
+      )
+    }
+
     const user = await getSessionUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

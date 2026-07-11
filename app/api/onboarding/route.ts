@@ -8,6 +8,7 @@ import {
   makeupArtistSchema, fashionStylistSchema, hairStylistSchema, videographerSchema,
   calculateOperationMonths, MIN_AGENCY_OPERATION_MONTHS,
 } from "@/lib/onboarding-schemas"
+import { agencySlug, makeUniqueSlug } from "@/lib/slug"
 import { z } from "zod"
 
 export async function POST(req: Request) {
@@ -224,8 +225,15 @@ export async function POST(req: Request) {
 
     // ── Role-specific records ───────────────────────────────────────
     if (role === Role.AGENCY) {
+      const agencyName = validatedData.publicName || validatedData.legalName || user.name
+      // Auto-generate SEO-friendly slug
+      let slug = agencySlug(agencyName)
+      const existingSlug = await prisma.agency.findUnique({ where: { slug } })
+      if (existingSlug) slug = makeUniqueSlug(slug)
+
       const agencyData: any = {
-        name: validatedData.publicName || validatedData.legalName || user.name,
+        name: agencyName,
+        slug,
         location: validatedData.city ? `${validatedData.city}, ${validatedData.country}` : "Not specified",
         verificationStatus: "PENDING_REVIEW",
         pilotStatus: "PENDING",

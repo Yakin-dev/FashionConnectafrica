@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { findModelWithIncludes } from "@/lib/db-helpers"
 
 const updateSchema = z.object({
   // Identity
@@ -51,23 +52,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
-    const model = await prisma.model.findUnique({
-      where: { id },
-      include: {
-        user: { include: { profile: true } },
-        agency: { select: { name: true, logoUrl: true, isVerified: true } },
-        reviews: true,
-        applications: {
-          include: { casting: { select: { title: true, location: true } } },
-          take: 10,
-          orderBy: { appliedAt: "desc" },
-        },
-        portfolioMedia: {
-          orderBy: { sortOrder: "asc" },
-        },
-      },
-    })
+    const { id: slugOrId } = await params
+    const model = await findModelWithIncludes(slugOrId)
     if (!model) return NextResponse.json({ error: "Model profile not found." }, { status: 404 })
     return NextResponse.json({ model })
   } catch (error) {
@@ -96,10 +82,15 @@ export async function PATCH(
     })
     if (!user) return NextResponse.json({ error: "User not found." }, { status: 404 })
 
-    const { id } = await params
+    const { id: slugOrId } = await params
+
+    // Resolve slug to ID for the PATCH
+    const targetModel = await findModelWithIncludes(slugOrId)
+    if (!targetModel) return NextResponse.json({ error: "Model profile not found." }, { status: 404 })
+    const id = targetModel.id
 
     const isOwner = user.model?.id === id
-    const isAgency = user.agency && await prisma.model.findFirst({ where: { id, agencyId: user.agency.id } })
+    const isAgency = user.agency && targetModel.agencyId === user.agency.id
     const isAdmin = user.role === "ADMIN"
 
     if (!isOwner && !isAgency && !isAdmin) {

@@ -1,8 +1,10 @@
-import type { Metadata } from "next"
 import { Playfair_Display, Inter } from "next/font/google"
 import "./globals.css"
 import { cn } from "@/lib/utils"
 import { SessionProvider } from "@/components/session-provider"
+import { defaultMetadata } from "@/lib/seo"
+
+export const metadata = defaultMetadata
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -15,19 +17,6 @@ const inter = Inter({
   variable: "--font-inter",
   display: "swap",
 })
-
-export const metadata: Metadata = {
-  title: "FashionConnect.Africa | Premium Fashion Business Platform",
-  description:
-    "Africa's premium business platform connecting fashion designers, photographers, models, agencies, and creative professionals. Subscribe to showcase your work and grow your fashion career.",
-  openGraph: {
-    title: "FashionConnect.Africa | Fashion Business Platform",
-    description:
-      "A premium business platform for fashion professionals. Showcase your designs, photography, and creative services. Subscribe and connect with Africa's fashion ecosystem.",
-    url: "https://fashionconnect.africa",
-    type: "website",
-  },
-}
 
 export default function RootLayout({
   children,
@@ -44,6 +33,41 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col font-sans bg-[#F8F5EF] text-[#1D1A16]">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "FashionConnect.Africa",
+              url: "https://fashionconnect.africa",
+              logo: "/logo.jpeg",
+              description:
+                "Africa's premium business platform connecting fashion designers, photographers, models, agencies, and creative professionals.",
+              foundingLocation: { "@type": "Place", name: "Kigali, Rwanda" },
+              areaServed: ["Rwanda", "Kenya", "Nigeria", "Uganda", "Tanzania", "South Africa", "Africa"],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "FashionConnect.Africa",
+              url: "https://fashionconnect.africa",
+              potentialAction: {
+                "@type": "SearchAction",
+                target: {
+                  "@type": "EntryPoint",
+                  urlTemplate: "https://fashionconnect.africa/search?q={search_term_string}",
+                },
+                "query-input": "required name=search_term_string",
+              },
+            }),
+          }}
+        />
         <SessionProvider>
           {children}
         </SessionProvider>

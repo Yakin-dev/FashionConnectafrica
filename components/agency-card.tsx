@@ -4,6 +4,7 @@ import { MapPin, Sparkles, ArrowRight } from "lucide-react";
 
 export interface AgencyCardData {
   id: string;
+  slug?: string;
   name: string;
   logoUrl: string | null;
   location: string;
@@ -84,7 +85,7 @@ export default function AgencyCard({ agency }: AgencyCardProps) {
           {modelsCount} {modelsCount === 1 ? "Model" : "Models"} Represented
         </span>
         <Link
-          href={`/agencies/${agency.id}`}
+          href={`/agencies/${agency.slug || agency.id}`}
           className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#C8A96A] group-hover:translate-x-1 transition-transform"
         >
           <span>View Roster</span>

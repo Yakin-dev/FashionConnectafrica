@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { hashPassword, validatePasswordStrength } from "@/lib/password"
 import { createSession } from "@/lib/session"
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { z } from "zod"
 
 const schema = z.object({
@@ -19,6 +20,16 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limiting
+    const ip = getClientIp(req)
+    const rateCheck = checkRateLimit(ip, "auth:signup")
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: "Too many registration attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(Math.ceil((rateCheck.resetAt - Date.now()) / 1000)) } }
+      )
+    }
+
     const body = await req.json()
     const data = schema.parse(body)
 
