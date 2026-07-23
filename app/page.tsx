@@ -224,6 +224,7 @@ export default function LandingPage() {
                   i === current ? "bg-[#C8A96A] w-6 h-2" : "bg-white/30 w-2 h-2 hover:bg-white/60"
                 }`}
                 aria-label={`Go to slide ${i + 1}`}
+                aria-current={i === current ? "step" : undefined}
               />
             ))}
           </div>

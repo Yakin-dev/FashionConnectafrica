@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LucideIcon, Menu, X } from "lucide-react";
@@ -27,8 +27,19 @@ export default function DashboardSidebar({ title, subtitle, items, role, logoUrl
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Close mobile drawer on Escape key
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape" && mobileOpen) {
+        setMobileOpen(false);
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [mobileOpen]);
+
   const NavItems = () => (
-    <nav className="flex flex-col gap-1">
+    <nav className="flex flex-col gap-1" aria-label="Dashboard navigation">
       {items.map((item) => {
         const Icon = item.icon;
         const isActive = pathname === item.href;
@@ -127,6 +138,9 @@ export default function DashboardSidebar({ title, subtitle, items, role, logoUrl
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-2xl flex flex-col p-6 gap-6"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Navigation menu"
             >
               <div className="flex items-center justify-between border-b border-[#E7DED1]/60 pb-5">
                 <div>

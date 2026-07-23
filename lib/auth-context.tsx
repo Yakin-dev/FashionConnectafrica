@@ -29,6 +29,52 @@ const AuthContext = createContext<AuthContextValue>({
   signOut: async () => {},
 })
 
+/**
+ * Ensure the CSRF token cookie exists by calling the CSRF endpoint.
+ * This is a fire-and-forget call — the cookie is set server-side.
+ */
+async function ensureCsrfToken() {
+  try {
+    await fetch("/api/auth/csrf")
+  } catch {
+    // CSRF token is non-critical for page rendering
+  }
+}
+
+/**
+ * Intercept global fetch to automatically include CSRF token
+ * on mutation requests (POST, PATCH, DELETE, PUT).
+ */
+function setupCsrfInterceptor() {
+  if (typeof window === "undefined") return
+
+  const originalFetch = window.fetch
+
+  window.fetch = function(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    const method = (init?.method || "GET").toUpperCase()
+
+    // Only add CSRF header for state-changing methods to API routes
+    if (["POST", "PATCH", "DELETE", "PUT"].includes(method)) {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url
+      if (url.includes("/api/") && !url.includes("/api/auth/")) {
+        const csrfCookie = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/)
+        const csrfToken = csrfCookie ? decodeURIComponent(csrfCookie[1]) : null
+        if (csrfToken) {
+          init = {
+            ...init,
+            headers: {
+              ...init?.headers,
+              "x-csrf-token": csrfToken,
+            },
+          }
+        }
+      }
+    }
+
+    return originalFetch.call(window, input, init)
+  } as typeof fetch
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -37,7 +83,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch("/api/auth/me")
       const data = await res.json()
-      setUser(data.user ?? null)
+      const currentUser = data.user ?? null
+      setUser(currentUser)
+
+      // Ensure CSRF token exists for authenticated users
+      if (currentUser) {
+        ensureCsrfToken()
+      }
     } catch {
       setUser(null)
     } finally {
@@ -56,6 +108,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    // Set up CSRF interceptor once on mount
+    setupCsrfInterceptor()
     refreshUser()
   }, [refreshUser])
 

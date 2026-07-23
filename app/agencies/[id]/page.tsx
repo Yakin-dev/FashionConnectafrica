@@ -4,7 +4,9 @@ import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import AgencyDetailClient from "./agency-client"
 
-export const dynamic = "force-dynamic"
+// ISR: revalidate every 60 seconds
+// Data fetching is handled client-side via AgencyDetailClient
+export const revalidate = 60
 
 async function findAgencyForMetadata(slugOrId: string) {
   const bySlug = await prisma.agency.findFirst({

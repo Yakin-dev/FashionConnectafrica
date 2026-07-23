@@ -1,7 +1,6 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
+// Client component — data is fetched client-side
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/navbar";
@@ -10,7 +9,20 @@ import DashboardSidebar from "@/components/dashboard-sidebar";
 import StatCard from "@/components/stat-card";
 import EmptyState from "@/components/empty-state";
 import Link from "next/link";
-import ModelCreateWizard from "@/components/model-create-wizard";
+import dynamic from "next/dynamic";
+
+// Lazy-load the heavy 5-step model creation wizard (only renders when opened)
+const ModelCreateWizard = dynamic(() => import("@/components/model-create-wizard"), {
+  ssr: false,
+  loading: () => (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="rounded-2xl bg-white p-8 shadow-2xl flex items-center gap-3">
+        <Loader2 className="h-5 w-5 animate-spin text-[#C8A96A]" />
+        <span className="text-xs font-bold uppercase tracking-widest text-[#6B6257]">Loading wizard...</span>
+      </div>
+    </div>
+  ),
+});
 import {
   Users, BookOpen, UserPlus, Eye, CheckCircle,
   Clock, AlertCircle, Loader2, ShieldCheck, XCircle,

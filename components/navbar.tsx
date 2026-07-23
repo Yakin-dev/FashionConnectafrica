@@ -46,6 +46,7 @@ export default function Navbar() {
                 alt="FashionConnect.Africa"
                 width={36}
                 height={36}
+                priority
                 className="rounded-full object-cover ring-2 ring-[#C8A96A]/30"
               />
               <span className="font-serif text-lg font-bold tracking-wider uppercase text-[#1D1A16]">
@@ -106,6 +107,8 @@ export default function Navbar() {
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="rounded-lg p-2 text-[#1D1A16] hover:bg-[#E7DED1]/50 transition-colors"
+              aria-label={isOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isOpen}
             >
               {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>

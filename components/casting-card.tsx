@@ -59,6 +59,7 @@ export default function CastingCard({ casting, onApply }: CastingCardProps) {
                 ? "bg-[#E7DED1] text-[#6B6257] cursor-not-allowed"
                 : "bg-[#1D1A16] text-white hover:bg-[#C8A96A]"
             }`}
+            aria-label={casting.applicationStatus === "Applied" ? `Already applied to ${casting.title}` : `Apply to ${casting.title}`}
           >
             {casting.applicationStatus === "Applied" ? "Applied" : "Apply Now"}
           </button>

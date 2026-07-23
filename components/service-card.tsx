@@ -56,6 +56,7 @@ export default function ServiceCard({ service, onBook }: ServiceCardProps) {
         <button
           onClick={() => onBook?.(service.id)}
           className="rounded-full bg-[#1D1A16] px-5 py-2 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#C8A96A] transition-all"
+          aria-label={`Book ${service.title} by ${service.providerName}`}
         >
           Book Service
         </button>

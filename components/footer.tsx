@@ -18,6 +18,7 @@ export default function Footer() {
                 alt="FashionConnect.Africa"
                 width={36}
                 height={36}
+                priority
                 className="rounded-full object-cover ring-2 ring-[#C8A96A]/30"
               />
               <span className="font-serif text-lg font-bold tracking-wider uppercase text-white">
@@ -31,8 +32,8 @@ export default function Footer() {
 
           {/* Links: Platform */}
           <div>
-            <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#C8A96A] mb-5">Platform</h4>
-            <ul className="space-y-3 text-xs">
+            <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#C8A96A] mb-5" id="footer-platform">Platform</h4>
+            <ul className="space-y-3 text-xs" aria-labelledby="footer-platform">
               <li>
                 <Link href="/models" className="text-[#6B6257] hover:text-white transition-colors">Browse Models</Link>
               </li>
@@ -50,8 +51,8 @@ export default function Footer() {
 
           {/* Links: Company */}
           <div>
-            <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#C8A96A] mb-5">Company</h4>
-            <ul className="space-y-3 text-xs">
+            <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#C8A96A] mb-5" id="footer-company">Company</h4>
+            <ul className="space-y-3 text-xs" aria-labelledby="footer-company">
               <li>
                 <Link href="/about" className="text-[#6B6257] hover:text-white transition-colors">About Us</Link>
               </li>

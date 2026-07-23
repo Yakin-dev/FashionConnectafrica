@@ -1,5 +1,38 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { logger } from "@/lib/logger"
+import { CSRF_EXEMPT_PATHS, CSRF_COOKIE_NAME } from "@/lib/csrf"
+
+// ─── CSRF Protection ────────────────────────────────────────────────
+const CSRF_HEADER_NAME = "x-csrf-token"
+
+/**
+ * Validate CSRF token for mutation requests (POST, PATCH, DELETE, PUT).
+ * Uses timing-safe comparison to prevent timing attacks.
+ * Auth endpoints and webhooks are exempt.
+ */
+function validateCsrfTokenMiddleware(token: string | null, cookieToken: string | undefined | null): boolean {
+  if (!token || !cookieToken) return false
+  if (token.length !== cookieToken.length) return false
+
+  try {
+    // Constant-time comparison
+    const tokenBuf = Buffer.from(token)
+    const cookieBuf = Buffer.from(cookieToken)
+    if (tokenBuf.length !== cookieBuf.length) return false
+
+    let result = 0
+    for (let i = 0; i < tokenBuf.length; i++) {
+      result |= tokenBuf[i] ^ cookieBuf[i]
+    }
+    return result === 0
+  } catch {
+    return false
+  }
+}
+
+// ─── Request Duration Tracking ───────────────────────────────────────
+const THRESHOLD_MS = 1000 // Log warning for requests over 1 second
 
 // ─── Security Headers ────────────────────────────────────────────────
 const SECURITY_HEADERS = {
@@ -87,6 +120,29 @@ export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get("session_token")?.value
   const hasSession = !!sessionCookie
 
+  // ─── CSRF check for mutation API requests ────────────────────
+  // Apply CSRF validation to all POST/PATCH/DELETE/PUT API routes
+  // that are not in the exempt list.
+  const isMutationMethod = ["POST", "PATCH", "DELETE", "PUT"].includes(request.method)
+  const isApiRoute = path.startsWith("/api/")
+  const isCsrfExempt = CSRF_EXEMPT_PATHS.some((exempt) => path.startsWith(exempt))
+
+  if (isMutationMethod && isApiRoute && !isCsrfExempt) {
+    const csrfToken = request.headers.get(CSRF_HEADER_NAME)
+    const csrfCookie = request.cookies.get(CSRF_COOKIE_NAME)?.value
+
+    if (!validateCsrfTokenMiddleware(csrfToken, csrfCookie)) {
+      const response = NextResponse.json(
+        { error: "Invalid or missing CSRF token.", code: "CSRF_VALIDATION_FAILED" },
+        { status: 403 }
+      )
+      for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+        response.headers.set(key, value)
+      }
+      return response
+    }
+  }
+
   const isPublic =
     PUBLIC_PATHS.includes(path) ||
     PUBLIC_PREFIXES.some((p) => path.startsWith(p))
@@ -107,9 +163,17 @@ export function middleware(request: NextRequest) {
 
   // Allow public paths through
   if (isPublic) {
+    const start = Date.now()
     const response = NextResponse.next()
     for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
       response.headers.set(key, value)
+    }
+    // Log request duration for API routes
+    if (path.startsWith("/api/")) {
+      const duration = Date.now() - start
+      if (duration > THRESHOLD_MS) {
+        logger.warn(`Slow API request: ${request.method} ${path}`, { data: { duration } })
+      }
     }
     return response
   }

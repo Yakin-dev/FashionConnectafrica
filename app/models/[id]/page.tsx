@@ -4,7 +4,9 @@ import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import ModelProfileClient from "./model-client"
 
-export const dynamic = "force-dynamic"
+// ISR: revalidate every 60 seconds
+// Data fetching is handled client-side via ModelProfileClient
+export const revalidate = 60
 
 async function findModelForMetadata(slugOrId: string) {
   const bySlug = await prisma.model.findFirst({

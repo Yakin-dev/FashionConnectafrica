@@ -33,6 +33,11 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col font-sans bg-[#F8F5EF] text-[#1D1A16]">
+        {/* Preconnect to CDN origin for faster Cloudinary image loading */}
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+        <a href="#main-content" className="skip-to-content">
+          Skip to main content
+        </a>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -69,7 +74,9 @@ export default function RootLayout({
           }}
         />
         <SessionProvider>
-          {children}
+          <main id="main-content" className="outline-none flex flex-col flex-1">
+            {children}
+          </main>
         </SessionProvider>
       </body>
     </html>

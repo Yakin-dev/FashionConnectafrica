@@ -75,7 +75,8 @@ export default function UploadBox({
               : <img src={previewUrl} alt="Preview" className="object-cover max-h-full w-full" />
             }
             <button onClick={handleClear}
-              className="absolute top-2 right-2 rounded-full bg-[#1D1A16]/80 p-1.5 text-white hover:bg-[#C8A96A] transition-colors">
+              className="absolute top-2 right-2 rounded-full bg-[#1D1A16]/80 p-1.5 text-white hover:bg-[#C8A96A] transition-colors"
+              aria-label="Remove file">
               <X className="h-4 w-4" />
             </button>
             {loading && (
@@ -95,7 +96,8 @@ export default function UploadBox({
             <input ref={fileInputRef} type="file" onChange={handleFileChange}
               className="hidden" accept={allowedTypes.join(",")} />
             <button type="button" onClick={() => fileInputRef.current?.click()}
-              className="rounded-full bg-[#F8F5EF] p-4 text-[#C8A96A] hover:bg-[#E7DED1]/50 transition-colors">
+              className="rounded-full bg-[#F8F5EF] p-4 text-[#C8A96A] hover:bg-[#E7DED1]/50 transition-colors"
+              aria-label="Upload file">
               <UploadCloud className="h-6 w-6" />
             </button>
             <h4 className="mt-3 font-serif text-sm font-bold text-[#1D1A16] uppercase">Drag & Drop or Click</h4>

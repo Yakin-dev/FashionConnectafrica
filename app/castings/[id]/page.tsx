@@ -1,7 +1,6 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
+// Client component — data is fetched on the client
 import { useState, useEffect, use } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";

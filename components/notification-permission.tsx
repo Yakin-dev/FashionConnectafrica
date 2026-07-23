@@ -99,7 +99,7 @@ export default function NotificationPermission() {
           )}
         </div>
 
-        <button onClick={() => setDismissed(true)} className="shrink-0 text-white/40 hover:text-white transition-colors">
+        <button onClick={() => setDismissed(true)} className="shrink-0 text-white/40 hover:text-white transition-colors" aria-label="Dismiss notification prompt">
           <X className="h-4 w-4" />
         </button>
       </div>
