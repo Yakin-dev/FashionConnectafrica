@@ -585,10 +585,10 @@ export default function ModelCreateWizard({ isOpen, onClose, onSuccess, verifica
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create model profile");
 
-      // Upload portfolio media if any
+      // Upload portfolio media if any (preserving user's cover selection)
       if (form.portfolioMedia.length > 0 && data.model?.id) {
         await Promise.all(
-          form.portfolioMedia.map((media, i) =>
+          form.portfolioMedia.map((media) =>
             fetch(`/api/models/${data.model.id}/media`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -596,8 +596,8 @@ export default function ModelCreateWizard({ isOpen, onClose, onSuccess, verifica
                 url: media.url,
                 publicId: media.publicId,
                 mediaType: "IMAGE",
-                sortOrder: i,
-                isCover: i === 0,
+                sortOrder: media.sortOrder,
+                isCover: media.isCover,
               }),
             })
           )

@@ -217,7 +217,10 @@ export async function POST(req: NextRequest) {
     // Parse date of birth if provided
     let dateOfBirth: Date | undefined;
     if (data.dateOfBirth) {
-      dateOfBirth = new Date(data.dateOfBirth);
+      const parsed = new Date(data.dateOfBirth);
+      if (!isNaN(parsed.getTime())) {
+        dateOfBirth = parsed;
+      }
     }
 
     // Auto-generate SEO-friendly slug
@@ -232,43 +235,50 @@ export async function POST(req: NextRequest) {
         gender: data.gender,
         category: data.categories?.[0] || "Runway",
         height: data.heightCm,
-        waist: data.waistCm || null,
-        hips: data.hipsCm || null,
-        chest: data.chestCm || null,
-        shoeSize: data.shoeSize || null,
-        eyeColor: data.eyeColor || null,
-        hairColor: data.hairColor || null,
+        // Use ?? null instead of || null so valid falsy values (0) are preserved
+        waist: data.waistCm ?? null,
+        hips: data.hipsCm ?? null,
+        chest: data.chestCm ?? null,
+        shoeSize: data.shoeSize ?? null,
+        eyeColor: data.eyeColor ?? null,
+        hairColor: data.hairColor ?? null,
         agencyId: poster.agency.id,
-        // New fields
+        // Availability from client
+        availability: data.availability ?? null,
+        // Location from city/country
+        location: [data.city, data.country].filter(Boolean).join(", ") || null,
+        // Professional fields
         professionalName: data.professionalName,
-        dateOfBirth: dateOfBirth || null,
-        nationality: data.nationality || null,
-        languages: data.languages || [],
-        representationStatus: data.representationStatus || null,
-        travelAvailability: data.travelAvailability || null,
-        categories: data.categories || [],
-        experienceLevel: data.experienceLevel || null,
-        bio: data.bio || null,
-        notableCredits: data.notableCredits || null,
-        skills: data.skills || [],
-        bustCm: data.bustCm || null,
-        chestCm: data.chestCm || null,
-        waistCm: data.waistCm || null,
-        hipsCm: data.hipsCm || null,
-        inseamCm: data.inseamCm || null,
-        shoeSizeSystem: data.shoeSizeSystem || null,
-        dressSize: data.dressSize || null,
-        jacketSize: data.jacketSize || null,
-        shirtSize: data.shirtSize || null,
-        trouserSize: data.trouserSize || null,
-        topSize: data.topSize || null,
-        bottomSize: data.bottomSize || null,
+        dateOfBirth: dateOfBirth ?? null,
+        nationality: data.nationality ?? null,
+        languages: data.languages ?? [],
+        representationStatus: data.representationStatus ?? null,
+        travelAvailability: data.travelAvailability ?? null,
+        categories: data.categories ?? [],
+        experienceLevel: data.experienceLevel ?? null,
+
+        bio: data.bio ?? null,
+        notableCredits: data.notableCredits ?? null,
+        skills: data.skills ?? [],
+        bustCm: data.bustCm ?? null,
+        chestCm: data.chestCm ?? null,
+        waistCm: data.waistCm ?? null,
+        hipsCm: data.hipsCm ?? null,
+        inseamCm: data.inseamCm ?? null,
+        shoeSizeSystem: data.shoeSizeSystem ?? null,
+        dressSize: data.dressSize ?? null,
+        jacketSize: data.jacketSize ?? null,
+        shirtSize: data.shirtSize ?? null,
+        trouserSize: data.trouserSize ?? null,
+        topSize: data.topSize ?? null,
+        bottomSize: data.bottomSize ?? null,
         profileStatus: data.profileStatus || "DRAFT",
-        privateContactEmail: data.privateContactEmail || null,
+        privateContactEmail: data.privateContactEmail ?? null,
         isAvailable: data.isAvailable ?? true,
       },
     })
 
+    // Also create a profile record for the model user (legacy/dashboard compatibility)
     if (data.city || data.country || data.bio) {
       await prisma.profile.create({
         data: {
